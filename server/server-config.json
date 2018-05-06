@@ -1,0 +1,10 @@
+{
+    	"MPort": "3333",
+	"WEBPORT":"8081",
+	"EncryptionKey": "blabla1223123456",
+	"WEBUsername": "username",
+	"WEBPassword":	"password1",
+	"UseTelegramBot":"YES",
+	"TelegramBotAPIKey":"Full_botID",
+	"TelegramChannelID":"your_personal_channelID"
+}
