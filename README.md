@@ -1,7 +1,7 @@
 # wtc-miner-monitor
 A Go server client tool for monitoring WTC mining on multiple machines
 
-This tool was written because I needed it for my own usage, I needed to monitor some 10-20 machines mining WTC and it was to cumbersome to login to each machine all the time to verify that they were still mining. I'm happy to add features and fix things if found but my time is limited and it works great for what I wanted it to do, this software is provided as is.
+This tool was written because I needed it for my own usage, I needed to monitor some 10-20 machines mining WTC and it was to cumbersome to login to each machine all the time to verify that they were still mining. I'm happy to add features and fix things if found but my time is limited and it works great for what I wanted it to do. This software is provided as is.
 
 if you find it useful please donate to any of the following crypto addresses:
 * WTC (ecr20 token on ethereum for now): 0x4198981c1204B7C26faE857eaBC9fd92fD8D5109 
@@ -14,10 +14,10 @@ If you want me to solve a specific problem or expand the feature list a donation
 I can be found on the walton slack as <b>martin_cy</b> you can also send me messages on reddit also under <b>martin_cy</b> and finally you can find me on telegram with username: <b>@Martin0cy</b> (https://t.me/Martin0cy)
 
 # Features
-It is made up of 2 parts, Server and client, all communcation between server and client is encrypted, it is based on the client will push their information to the server that will collect all the clients' information and give two simple tables as username/password protected web page where you can see hashrate of each node, how many peers it has and when it reported in last.
+It is made up of 2 parts, Server and Client, all communcation between server and client is encrypted, it is based on the client will push their information to the server that will collect all the clients' information and give two simple tables as username/password protected web page where you can see hashrate of each node, how many peers it has and when it reported in last.
 
 ## Server
-The server takes all the messages sent from the clients and put them into a very simple sqlite database, it will only keep data for 2 hours, this is configured like this to remain fast and light. "Node Down" notifications are sent 5 minutes after a nodes last message, between 1-3 messages will be sent in the windows of 5-8 minutes, then also another 2-3 messages will be sent 1h after it has been down after that no more notifications will be sent concerning that node. Any time a node reports 0 peers you will get a message every 100 seconds. (this can get very spammy and is on my list of todos)
+The server takes all the messages sent from the clients and put them into a very simple sqlite database, it will only keep data for 2 hours, this is configured like this to remain fast and light. "Node Down" notifications are sent 5 minutes after a nodes last message, between 1-3 messages will be sent in the windows of 5-8 minutes, then also another 2-3 messages will be sent 1h after it has been down after that no more notifications will be sent concerning that node. Any time a node reports 0 peers you will get a message every 100 seconds. (this can get very spammy and is on my list of todos). 
 
 the server package will have the following content:
 * server.exe
@@ -107,7 +107,7 @@ full server ip: e.g. 180.180.180.180:3333 The port must match what you specified
 This must be identical to the key you specified in the server-config.json
 
 #### Frequency
-How often clients should report to server, I reccommend to leave it at 60, (have not tested much with other frequencies)
+How often clients should report to server, I recommend to leave it at 60, (have not tested much with other frequencies)
 
 #### Mode
 This can be either "CPU" or "GPU" this is case sensitive.
@@ -119,28 +119,30 @@ This should be the path to where your "walton.exe" lives
 this only really matters if you are doing GPU mining. This is the path to where your ming_run.exe lives, and where your "0202001" file lives.
 
 ### client.exe
-once server is running, and local mining has been started and the config has been filed in just double click it. it will take 60 seconds before you see the first line writing out your hash and peer count, and at that point you will also see a line on the server.
+once server is running, and local mining has been started and the config has been filed in just double click it. it will take 60 seconds before you see the first line writing out your hash and peer count, and at that point you will also see a line on the server. Yes of course you can run client.exe on the same machine as you run server.exe.
 
 
 # Checking things while its running
-* In a web browser just go to: http://the IP of the machine you are running the server on
+* In a web browser just go to: http://" the IP of the machine you are running the server on ":" web port number" e.g. http://1.1.1.1:8081
 * supply the username/password you put in the server-config.json
 * Everytime you reload the page the data is updated as can be seen from the "Current UTC time" changes
 You should start seeing 2 tables: 
 * The left most will contain latest data from all nodes, their hash rate, and peer count and when last they checked in. 
 * The right hand table will show your aggregated hashing power for each minute. (node count shows how how many nodes reported in that minute, it is possible it shows more then your total node count, it is a known bug but mostly it will show correctly)
 
+# Using this monitor for Multi-GPU rigs
+This should be possible, I dont have one so have not tried it. You will have to run 1 client per GPU and make sure the paths are setup correctly in config.json per client, and that the peer.bat paths are also correct.
 
 # Building it yourself
-Assuming some basic Go knownledge and a correct setup Go environment.
+Assuming some basic Go knowledge and a correct setup Go environment.
 * go to the aesEncryption folder: go install
 * go the wtcPayLoad folder: go install
 * go to server folder: 
-** go get 
-** go build
+  * go get 
+  * go build
 * go to client folder:
-** go get
-** go build
+  * go get
+  * go build
 
 you should now have the executables needed, configure the configs as above.
 
