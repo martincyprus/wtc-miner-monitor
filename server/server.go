@@ -10,11 +10,12 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"time"
-	"wtc-monitor/aesEncryption"
-	"wtc-monitor/wtcPayload"
+	"wtc-miner-monitor/aesEncryption"
+	"wtc-miner-monitor/wtcPayload"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/tkanos/gonfig"
@@ -43,6 +44,8 @@ func main() {
 		fmt.Printf("Failed to read the configuration file: %s", err)
 		os.Exit(3)
 	}
+
+	validateServerConfig(configuration)
 	CONN_PORT := configuration.MPort
 
 	db, err := sql.Open("sqlite3", "./db.db")
@@ -175,4 +178,39 @@ func handleRequest(conn net.Conn, db *sql.DB, configuration Configuration) {
 	stmt.Exec(s.Id, s.Name, s.Ts, s.Hashrate, s.Ip, s.Peercount)
 	checkErr(err)
 
+}
+
+func validateServerConfig(configuration Configuration) {
+
+	//check MPort
+	if _, err := strconv.ParseInt(configuration.MPort, 10, 64); err != nil {
+		panic(fmt.Sprintf("MPort is not a number, it is: %v \n", configuration.MPort))
+	}
+
+	if _, err := strconv.ParseInt(configuration.WEBPORT, 10, 64); err != nil {
+		panic(fmt.Sprintf("WEBPORT is not a number, it is: %v \n", configuration.WEBPORT))
+	}
+
+	//Check that EncryptionKey is at least 16 characters
+	if len(configuration.EncryptionKey) < 16 {
+		panic(fmt.Sprintf("EncryptionKey must be at least 16 character it is currently only: %v", len(configuration.EncryptionKey)))
+	}
+
+	if len(configuration.WEBUsername) < 4 {
+		panic(fmt.Sprintf("WEBUsername must not be less than 4 character"))
+	}
+
+	if len(configuration.WEBPassword) < 4 {
+		panic(fmt.Sprintf("WEBPassword must not be less than 4"))
+	}
+
+	if strings.ToUpper(configuration.UseTelegramBot) == "YES" {
+		if len(configuration.TelegramBotAPIKey) < 20 {
+			panic(fmt.Sprintf("TelegramBotAPIKey looks too small please check it"))
+		}
+		if _, err := strconv.ParseInt(configuration.TelegramChannelID, 10, 64); err != nil {
+			panic(fmt.Sprintf("TelegramChannelID is not a number, it is: %v \n", configuration.TelegramChannelID))
+
+		}
+	}
 }

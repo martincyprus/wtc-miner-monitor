@@ -7,9 +7,9 @@ import "bufio"
 import "math"
 
 import "os"
-import "wtc-monitor/wtcPayload"
+import "wtc-miner-monitor/wtcPayload"
 
-import "wtc-monitor/aesEncryption"
+import "wtc-miner-monitor/aesEncryption"
 import "time"
 import "encoding/json"
 import "github.com/tkanos/gonfig"
