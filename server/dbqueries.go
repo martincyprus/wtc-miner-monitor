@@ -70,8 +70,36 @@ func getLatestTotalHash(db *sql.DB) []TotalHash {
 	return result
 }
 
+type AverageHash struct {
+	Nodeid   int
+	Nodename string
+	Hashrate float64
+}
+
+func getAverageHash(db *sql.DB) []AverageHash {
+
+	sql_readall := `select nodeid, nodename, round(avg(hashrate),0) from hashlog group by nodeid, nodename order by nodeid asc;`
+
+	rows, err := db.Query(sql_readall)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var result []AverageHash
+	for rows.Next() {
+		item := AverageHash{}
+		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Hashrate)
+		if err2 != nil {
+			panic(err2)
+		}
+		result = append(result, item)
+	}
+	return result
+}
+
 func cleanupOldRecords(db *sql.DB) {
-	sql_readall := `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-1 hours');`
+	sql_readall := `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-2 hours');`
 	stmt, err := db.Prepare(sql_readall)
 	checkErr(err)
 	_, err = stmt.Exec()
@@ -79,7 +107,7 @@ func cleanupOldRecords(db *sql.DB) {
 }
 
 func checkForStoppedNodes(db *sql.DB) []HashlogItem {
-	sql := `select * from latest_node_data where (datetime(ts,'utc') <= datetime('now', '-5 minutes') and datetime(ts,'utc') >= datetime('now', '-10 minutes')) OR (datetime(ts,'utc') >= datetime('now', '-59 minutes') and datetime(ts,'utc') <= datetime('now', '-56 minutes'));`
+	sql := `select * from latest_node_data where (datetime(ts,'utc') <= datetime('now', '-5 minutes') and datetime(ts,'utc') >= datetime('now', '-9 minutes')) OR (datetime(ts,'utc') >= datetime('now', '-59 minutes') and datetime(ts,'utc') <= datetime('now', '-56 minutes'));`
 	rows, err := db.Query(sql)
 	if err != nil {
 		return nil

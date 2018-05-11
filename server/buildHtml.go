@@ -20,14 +20,12 @@ func buildHtml() string {
 	var html string
 	html = `<html> 
 	<head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
 		<link rel="stylesheet" href="http://thisisdallas.github.io/Simple-Grid/simpleGrid.css">
-    <script src="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
   </head>
 	<body> 
- <script src='https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js'></script>`
+ `
 	html += `<div class="grid grid-pad">
-	 <div class="col-1-2">
+	 <div class="col-1-3">
        <div class="content">
 		<h1>Latest Hash By Nodes</h1>`
 	html += "<h2>Time now: " + time.Now().UTC().Format("2006-01-02 15:04 UTC") + "</h2>"
@@ -45,7 +43,7 @@ func buildHtml() string {
 	html += `</table>
        </div>
    	 </div>
-	<div class="col-1-2">
+	<div class="col-1-3">
        <div class="content">
 		<h1>Latest Total Hashes</h1>`
 	totalHashes := getLatestTotalHash(db)
@@ -60,6 +58,23 @@ func buildHtml() string {
 	html += `</table>
 	</div>
 		</div>
+	<div class="col-1-3">
+       <div class="content">
+		<h1>Average Hashes (2h)</h1>`
+	averageHashes := getAverageHash(db)
+	html += "<table border = 2 cellpadding=2><tr><th>Nodeid</th><th>Nodename</th><th>Aveage Hash</th></tr>"
+	for _, row := range averageHashes {
+		html += "<tr>" +
+			"<td>" + strconv.Itoa(row.Nodeid) + "</td>" +
+			"<td>" + row.Nodename + "</td>" +
+			"<td>" + strconv.FormatFloat(row.Hashrate, 'f', -1, 32) + "</td>" +
+			"</tr>"
+	}
+	html += `</table>
+	</div>
+		</div>		
+		
+		
 	</div>`
 
 	html += "</body></html>"
