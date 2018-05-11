@@ -26,6 +26,7 @@ type Configuration struct {
 	Mode                   string
 	CpuMinerWalletLocation string
 	GpuMinerLocation       string
+	MinerAddress           string
 }
 
 func main() {
@@ -35,6 +36,9 @@ func main() {
 		fmt.Printf("Failed to read the configuration file: %s", err)
 		os.Exit(3)
 	}
+
+	validateClientConfig(configuration)
+
 	for {
 
 		createAPackage(configuration)
@@ -132,4 +136,62 @@ func getHash(configuration Configuration) int {
 	}
 
 	return 0
+}
+
+func validateClientConfig(configuration Configuration) {
+
+	// check server connection
+	i := strings.Index(configuration.Server, ":")
+	if i > -1 {
+		serverIP := configuration.Server[:i]
+		Port := configuration.Server[i+1:]
+		address := net.ParseIP(serverIP)
+		if address == nil {
+			fmt.Printf("Validation failed on config.json: ServerIP is not an IP number, it is: %v \n", serverIP)
+			os.Exit(3)
+		}
+		if _, err := strconv.ParseInt(Port, 10, 64); err != nil {
+			fmt.Printf("Validation failed on config.json: Server Port is not a number, it is: %v \n", Port)
+			os.Exit(3)
+		}
+		conn, err := net.Dial("tcp", configuration.Server)
+		if err != nil {
+			fmt.Println("Validation failed on config.json: Unable to make a connection to server on IP: " + serverIP + " on Port: " + Port)
+			fmt.Println("Verify that the server is running, also verify that this machine can connect to it, does the server allow inbound connections on port:" + Port + "?")
+			conn.Close()
+			os.Exit(3)
+		}
+		conn.Close()
+	} else {
+		fmt.Printf("Validation failed on config.json: Server is not a a valid IP:PORT value, it is: %v \n", configuration.Server)
+		os.Exit(3)
+	}
+
+	//Check that EncryptionKey is at least 16 characters
+	if len(configuration.EncryptionKey) < 16 {
+		fmt.Printf("Validation failed on config.json: EncryptionKey must be at least 16 character it is currently only: %v", len(configuration.EncryptionKey))
+		os.Exit(3)
+	}
+
+	//Check Mode GPU or CPU
+	if configuration.Mode == "GPU" {
+		fmt.Println("GPU")
+		location := configuration.GpuMinerLocation + `\\ming_run.exe`
+		if _, err := os.Stat(location); os.IsNotExist(err) {
+			fmt.Println(location)
+			fmt.Printf(`Validation failed on config.json: ming.exe does not appear to exist at the GpuMinerLocation, please provide a path to the location of ming_run.exe and use double \\ for \ e.g. C:\\Program Files\\WTC\\Walton-GPU-64\\GPUMing_v0.2` + "\n")
+			os.Exit(3)
+		}
+	} else if configuration.Mode == "CPU" {
+		fmt.Println("CPU")
+		if _, err := os.Stat(configuration.CpuMinerWalletLocation + `\walton.exe`); os.IsNotExist(err) {
+			fmt.Printf(`Validation failed on config.json: Walton.exe does not appear to exist at the CpuMinerWalletLocation, please provide a path to the location of walton.exe and use double \\ for \ e.g. C:\\Program Files\\WTC` + "\n")
+			os.Exit(3)
+		}
+	} else {
+		fmt.Println("Other")
+		fmt.Printf("Validation failed on config.json: Mode must be either GPU or CPU")
+		os.Exit(3)
+	}
+
 }

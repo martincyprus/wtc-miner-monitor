@@ -35,6 +35,7 @@ type Configuration struct {
 	UseTelegramBot    string
 	TelegramBotAPIKey string
 	TelegramChannelID string
+	Debug             string
 }
 
 func main() {
@@ -61,7 +62,8 @@ func main() {
 	}
 	// Close the listener when the application closes.
 	defer l.Close()
-	fmt.Println("Listening on " + CONN_HOST + ":" + CONN_PORT)
+	fmt.Println("Listening for miner connections on Port:" + CONN_PORT)
+	fmt.Println("Web page is listening on Port:" + configuration.WEBPORT)
 
 	go func() {
 		for {
@@ -152,13 +154,22 @@ func handleRequest(conn net.Conn, db *sql.DB, configuration Configuration) {
 	// Read the incoming connection into the buffer.
 	reqLen, err := conn.Read(buf)
 	if err != nil {
-		fmt.Println("Error reading:", err.Error())
+		if err.Error() == "EOF" {
+			fmt.Println("Hand shake from client:" + conn.RemoteAddr().String())
+		} else {
+			fmt.Println("Error reading:")
+		}
+		conn.Close()
+		return
 	}
 	key := []byte(configuration.EncryptionKey)
 	//Decrypt the data
 	data, err := aesEncryption.Decrypt(key, string(buf[0:reqLen]))
 	if err != nil {
 		fmt.Println("Error decrypting:", err.Error())
+		conn.Close()
+		return
+
 	}
 
 	var s wtcPayload.WtcPayload
@@ -166,17 +177,27 @@ func handleRequest(conn net.Conn, db *sql.DB, configuration Configuration) {
 	err = json.Unmarshal([]byte(data), &s)
 	if err != nil {
 		fmt.Println("Error Unmarshalling:", err.Error())
+		conn.Close()
+		return
 	}
-	fmt.Println(s)
+	if strings.ToUpper(configuration.Debug) == "YES" {
+		fmt.Println(s)
+	}
 	// Send a response back to person contacting us.
 	conn.Write([]byte("Message received."))
 	// Close the connection when you're done with it.
 	conn.Close()
 
 	stmt, err := db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount) values(?,?,?,?,?,?)")
-	checkErr(err)
+	if err != nil {
+		fmt.Println("Bad values unable to make proper SQL statement error was: ", err)
+		return
+	}
 	stmt.Exec(s.Id, s.Name, s.Ts, s.Hashrate, s.Ip, s.Peercount)
-	checkErr(err)
+	if err != nil {
+		fmt.Println("Unable to insert values to db with following statement: ", err)
+		return
+	}
 
 }
 
@@ -184,32 +205,39 @@ func validateServerConfig(configuration Configuration) {
 
 	//check MPort
 	if _, err := strconv.ParseInt(configuration.MPort, 10, 64); err != nil {
-		panic(fmt.Sprintf("MPort is not a number, it is: %v \n", configuration.MPort))
+		fmt.Printf("Validation failed on server-config.json: MPort is not a number, it is: %v \n", configuration.MPort)
+		os.Exit(3)
 	}
 
 	if _, err := strconv.ParseInt(configuration.WEBPORT, 10, 64); err != nil {
-		panic(fmt.Sprintf("WEBPORT is not a number, it is: %v \n", configuration.WEBPORT))
+		fmt.Printf("Validation failed on server-config.json: WEBPORT is not a number, it is: %v \n", configuration.WEBPORT)
+		os.Exit(3)
 	}
 
 	//Check that EncryptionKey is at least 16 characters
 	if len(configuration.EncryptionKey) < 16 {
-		panic(fmt.Sprintf("EncryptionKey must be at least 16 character it is currently only: %v", len(configuration.EncryptionKey)))
+		fmt.Printf("Validation failed on server-config.json: EncryptionKey must be at least 16 character it is currently only: %v", len(configuration.EncryptionKey))
+		os.Exit(3)
 	}
 
 	if len(configuration.WEBUsername) < 4 {
-		panic(fmt.Sprintf("WEBUsername must not be less than 4 character"))
+		fmt.Printf("Validation failed on server-config.json: WEBUsername must not be less than 4 character")
+		os.Exit(3)
 	}
 
 	if len(configuration.WEBPassword) < 4 {
-		panic(fmt.Sprintf("WEBPassword must not be less than 4"))
+		fmt.Printf("Validation failed on server-config.json: WEBPassword must not be less than 4")
+		os.Exit(3)
 	}
 
 	if strings.ToUpper(configuration.UseTelegramBot) == "YES" {
 		if len(configuration.TelegramBotAPIKey) < 20 {
-			panic(fmt.Sprintf("TelegramBotAPIKey looks too small please check it"))
+			fmt.Printf("Validation failed on server-config.json: TelegramBotAPIKey looks too small please check it")
+			os.Exit(3)
 		}
 		if _, err := strconv.ParseInt(configuration.TelegramChannelID, 10, 64); err != nil {
-			panic(fmt.Sprintf("TelegramChannelID is not a number, it is: %v \n", configuration.TelegramChannelID))
+			fmt.Printf("Validation failed on server-config.json: TelegramChannelID is not a number, it is: %v \n", configuration.TelegramChannelID)
+			os.Exit(3)
 
 		}
 	}

@@ -1,10 +1,18 @@
 {
-     "Id": 1,
-     "Name":"comp1",
-     "Server": "serverIP:3333",
+	"Id": 1,
+
+     	"Name":"comp1",
+
+     	"Server": "0.0.0.0:3333",
+
 	"EncryptionKey": "blabla1223123456",
+
 	"Frequency": 60,
-	"Mode":"GPU",
+
+	"Mode":"CPU",
+
 	"CpuMinerWalletLocation":"C:\\Program Files\\WTC",
+
 	"GpuMinerLocation":"C:\\Program Files\\WTC\\Walton-GPU-64\\GPUMing_v0.2"
+
 }

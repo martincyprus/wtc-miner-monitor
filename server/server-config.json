@@ -6,5 +6,7 @@
 	"WEBPassword":	"password1",
 	"UseTelegramBot":"YES",
 	"TelegramBotAPIKey":"Full_botID",
-	"TelegramChannelID":"your_personal_channelID"
+	"TelegramChannelID":"your_personal_channelID",
+	"MinerAddress":"you miner address",
+	"Debug":"YES"
 }
