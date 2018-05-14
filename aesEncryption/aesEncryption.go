@@ -75,6 +75,10 @@ func Decrypt(key []byte, text string) (string, error) {
 		return "", errors.New("blocksize must be multipe of decoded message length")
 	}
 
+	if len(decodedMsg) < aes.BlockSize {
+		return "", errors.New("does not look like a real encrypted block")
+	}
+
 	iv := decodedMsg[:aes.BlockSize]
 	msg := decodedMsg[aes.BlockSize:]
 
@@ -88,4 +92,3 @@ func Decrypt(key []byte, text string) (string, error) {
 
 	return string(unpadMsg), nil
 }
-
