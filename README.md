@@ -37,7 +37,8 @@ has the following content:
         "WEBPassword":  "password1",
         "UseTelegramBot":"YES",
         "TelegramBotAPIKey":"Full_botID",
-        "TelegramChannelID":"your_personal_channelID"
+        "TelegramChannelID":"your_personal_channelID",
+        "Debug":"YES"
 </pre>
 
 
@@ -66,6 +67,9 @@ Your full telegram API botkey
 your private channel ID with your notification bot.
 
 Once you have configured the above parameters you can just double click start the server.exe
+
+#### Debug
+print out all the data sent to server from clients
 
 ## Client
 The client is something you have to run on each node and configure for each specific node. It comes with the following files:
