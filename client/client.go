@@ -18,15 +18,15 @@ import "os/exec"
 import "strings"
 
 type Configuration struct {
-	Id                     int
-	Name                   string
-	Server                 string
-	EncryptionKey          string
-	Frequency              int
-	Mode                   string
-	CpuMinerWalletLocation string
-	GpuMinerLocation       string
-	MinerAddress           string
+	Id               int
+	Name             string
+	Server           string
+	EncryptionKey    string
+	Frequency        int
+	Mode             string
+	WaltonClientPath string
+	GpuMinerLocation string
+	RpcPort          string
 }
 
 func main() {
@@ -38,6 +38,7 @@ func main() {
 	}
 
 	validateClientConfig(configuration)
+	createFiles(configuration)
 
 	for {
 
@@ -78,16 +79,44 @@ func createAPackage(configuration Configuration) {
 
 func getPeerCount() int {
 	c, err := exec.Command("peer.bat").Output()
-
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}
-	words := strings.Fields(string(c))
-	f, err := strconv.Atoi(words[6])
+	p := strings.SplitAfter(string(c), "net.peerCount")[1]
+	p = strings.Join(strings.Fields(p), "")
+	peerCount, err := strconv.Atoi(p)
 	if err != nil {
 		return 0
 	}
-	return f
+	return peerCount
+}
+
+func getBlockNumber() int {
+	c, err := exec.Command("blockNumber.bat").Output()
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
+	p := strings.SplitAfter(string(c), "eth.blockNumber")[1]
+	p = strings.Join(strings.Fields(p), "")
+	blockNumber, err := strconv.Atoi(p)
+	if err != nil {
+		return 0
+	}
+	return blockNumber
+}
+
+func getHashNumber() int {
+	c, err := exec.Command("cpuHash.bat").Output()
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
+	p := strings.SplitAfter(string(c), "eth.hashrate")[1]
+	p = strings.Join(strings.Fields(p), "")
+	hashrate, err := strconv.Atoi(p)
+	if err != nil {
+		return 0
+	}
+	return hashrate
 }
 
 func getHash(configuration Configuration) int {
@@ -95,14 +124,9 @@ func getHash(configuration Configuration) int {
 	if configuration.Mode == "CPU" {
 		var sum float64 = 0
 		for i := 0; i < 6; i++ {
-			c, err := exec.Command("cpuHash.bat").Output()
-			if err != nil {
-				fmt.Println("Error: ", err)
-			}
-			words := strings.Fields(string(c))
-			f, err := strconv.ParseFloat(words[6], 64)
-			if err == nil {
-				sum += f
+			f := getHashNumber()
+			if f != 0 {
+				sum += float64(f)
 				time.Sleep(time.Duration(9) * time.Second)
 			} else {
 
@@ -173,6 +197,12 @@ func validateClientConfig(configuration Configuration) {
 		os.Exit(3)
 	}
 
+	//check that Walton.exe path is valid
+	if _, err := os.Stat(configuration.WaltonClientPath); os.IsNotExist(err) {
+		fmt.Printf(`Validation failed on config.json: Walton.exe does not appear to exist at the WaltonClientPath, please provide a path to the location of walton.exe and use double \\ for \ e.g. C:\\Program Files\\WTC\\walton.exe` + "\n")
+		os.Exit(3)
+	}
+
 	//Check Mode GPU or CPU
 	if configuration.Mode == "GPU" {
 		fmt.Println("GPU")
@@ -184,14 +214,68 @@ func validateClientConfig(configuration Configuration) {
 		}
 	} else if configuration.Mode == "CPU" {
 		fmt.Println("CPU")
-		if _, err := os.Stat(configuration.CpuMinerWalletLocation + `\walton.exe`); os.IsNotExist(err) {
-			fmt.Printf(`Validation failed on config.json: Walton.exe does not appear to exist at the CpuMinerWalletLocation, please provide a path to the location of walton.exe and use double \\ for \ e.g. C:\\Program Files\\WTC` + "\n")
-			os.Exit(3)
-		}
 	} else {
 		fmt.Println("Other")
 		fmt.Printf("Validation failed on config.json: Mode must be either GPU or CPU")
 		os.Exit(3)
 	}
+
+	//Check that rpc port is a number and that the rpc server is listening on it
+	if _, err := strconv.ParseInt(configuration.RpcPort, 10, 64); err != nil {
+		fmt.Printf("Validation failed on config.json: Server Port is not a number, it is: %v \n", configuration.RpcPort)
+		os.Exit(3)
+	}
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort("localhost", configuration.RpcPort), time.Duration(1)*time.Second)
+	if err != nil {
+		fmt.Println("Validation failed on config.json: unable connect to rpc port on local machine", configuration.RpcPort)
+	}
+	conn.Close()
+
+}
+
+func createFiles(configuration Configuration) {
+	createPeerBat(configuration)
+	createCpuHashBat(configuration)
+	createBlockNumberBat(configuration)
+}
+
+func createPeerBat(configuration Configuration) {
+	f, err := os.Create("peer.bat")
+	if err != nil {
+		fmt.Println("ERROR creating files: Unable to create the peer.bat file")
+		os.Exit(3)
+	}
+	w := bufio.NewWriter(f)
+	peerBatCommand := configuration.WaltonClientPath + " attach http://localhost:" + configuration.RpcPort + " --exec net.peerCount\n"
+	_, err = w.WriteString(peerBatCommand)
+	w.Flush()
+	f.Close()
+
+}
+
+func createCpuHashBat(configuration Configuration) {
+	f, err := os.Create("cpuHash.bat")
+	if err != nil {
+		fmt.Println("ERROR creating files: Unable to create the cpuHash.bat file")
+		os.Exit(3)
+	}
+	w := bufio.NewWriter(f)
+	cpuHashCommand := configuration.WaltonClientPath + " attach http://localhost:" + configuration.RpcPort + " --exec eth.hashrate\n"
+	_, err = w.WriteString(cpuHashCommand)
+	w.Flush()
+	f.Close()
+}
+
+func createBlockNumberBat(configuration Configuration) {
+	f, err := os.Create("blockNumber.bat")
+	if err != nil {
+		fmt.Println("ERROR creating files: Unable to create the blockNumber.bat file")
+		os.Exit(3)
+	}
+	w := bufio.NewWriter(f)
+	blockNumberCommand := configuration.WaltonClientPath + " attach http://localhost:" + configuration.RpcPort + " --exec eth.blockNumber\n"
+	_, err = w.WriteString(blockNumberCommand)
+	w.Flush()
+	f.Close()
 
 }
