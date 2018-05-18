@@ -58,10 +58,10 @@ func createAPackage(configuration Configuration) {
 	s.Id = configuration.Id
 	s.Name = configuration.Name
 	s.Ts = time.Now()
-	fmt.Println("HASH: ", s.Hashrate)
 	s.Ip = conn.LocalAddr().String()
 	s.Peercount = getPeerCount()
-	fmt.Println("PEERCOUNT: ", s.Peercount)
+	s.BlockNumber = getBlockNumber()
+	fmt.Printf("Block number: %v Peer count: %v Hashrate: %v", s.BlockNumber, s.Peercount, s.Hashrate)
 	data, err := json.Marshal(s)
 	if err != nil {
 		fmt.Printf("unable to marshal packat into a json object: %s", err)

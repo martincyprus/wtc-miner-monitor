@@ -188,12 +188,12 @@ func handleRequest(conn net.Conn, db *sql.DB, configuration Configuration) {
 	// Close the connection when you're done with it.
 	conn.Close()
 
-	stmt, err := db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount) values(?,?,?,?,?,?)")
+	stmt, err := db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount,blocknumber) values(?,?,?,?,?,?,?)")
 	if err != nil {
 		fmt.Println("Bad values unable to make proper SQL statement error was: ", err)
 		return
 	}
-	stmt.Exec(s.Id, s.Name, s.Ts, s.Hashrate, s.Ip, s.Peercount)
+	stmt.Exec(s.Id, s.Name, s.Ts, s.Hashrate, s.Ip, s.Peercount, s.BlockNumber)
 	if err != nil {
 		fmt.Println("Unable to insert values to db with following statement: ", err)
 		return

@@ -5,10 +5,11 @@ import (
 )
 
 type WtcPayload struct {
-	Id        int
-	Name      string
-	Ip        string
-	Ts        time.Time
-	Hashrate  int
-	Peercount int
+	Id          int
+	Name        string
+	Ip          string
+	Ts          time.Time
+	Hashrate    int
+	Peercount   int
+	BlockNumber int
 }
