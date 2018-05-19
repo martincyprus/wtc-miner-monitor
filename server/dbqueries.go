@@ -10,12 +10,13 @@ import (
 )
 
 type HashlogItem struct {
-	Nodeid    int
-	Nodename  string
-	Ts        time.Time
-	Hashrate  int
-	Ip        string
-	Peercount int
+	Nodeid      int
+	Nodename    string
+	Ts          time.Time
+	Hashrate    int
+	Ip          string
+	Peercount   int
+	Blocknumber int
 }
 
 type BlockInfo struct {
@@ -117,7 +118,7 @@ func checkForStoppedNodes(db *sql.DB) []HashlogItem {
 	var result []HashlogItem
 	for rows.Next() {
 		item := HashlogItem{}
-		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Ts, &item.Hashrate, &item.Ip, &item.Peercount)
+		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Ts, &item.Hashrate, &item.Ip, &item.Peercount, &item.Blocknumber)
 		if err2 != nil {
 			return nil
 		}
@@ -137,7 +138,7 @@ func checkForZeroPeers(db *sql.DB) []HashlogItem {
 	var result []HashlogItem
 	for rows.Next() {
 		item := HashlogItem{}
-		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Ts, &item.Hashrate, &item.Ip, &item.Peercount)
+		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Ts, &item.Hashrate, &item.Ip, &item.Peercount, &item.Blocknumber)
 		if err2 != nil {
 			return nil
 		}
@@ -170,7 +171,7 @@ func getTotalHash(db *sql.DB, nodeCount int) []TotalHash {
 
 func getLatestNodeData(db *sql.DB) []HashlogItem {
 
-	sql_readall := `SELECT nodeid,nodename,ts,hashrate,ip,peercount FROM latest_node_data`
+	sql_readall := `SELECT nodeid,nodename,ts,hashrate,ip,peercount,blocknumber FROM latest_node_data`
 
 	rows, err := db.Query(sql_readall)
 	if err != nil {
@@ -181,7 +182,7 @@ func getLatestNodeData(db *sql.DB) []HashlogItem {
 	var result []HashlogItem
 	for rows.Next() {
 		item := HashlogItem{}
-		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Ts, &item.Hashrate, &item.Ip, &item.Peercount)
+		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Ts, &item.Hashrate, &item.Ip, &item.Peercount, &item.Blocknumber)
 		if err2 != nil {
 			panic(err2)
 		}

@@ -25,13 +25,14 @@ func buildHtml() string {
 	html += `<h1>Latest Hash By Nodes</h1>`
 	html += "<h2>Time now: " + time.Now().UTC().Format("2006-01-02 15:04 UTC") + "</h2>"
 
-	html += "<table border = 2 cellpadding=2><tr><th>NodeID</th><th>Name</th><th>h/s</th><th>Peer Count</th><th>Last datapoint</th></tr>"
+	html += "<table border = 2 cellpadding=2><tr><th>NodeID</th><th>Name</th><th>h/s</th><th>Peer Count</th><th>Block</th><th>Last datapoint</th></tr>"
 	for _, row := range bla {
 		html += "<tr>" +
 			"<td>" + strconv.Itoa(row.Nodeid) + "</td>" +
 			"<td>" + row.Nodename + "</td>" +
 			"<td>" + strconv.Itoa(row.Hashrate) + "</td>" +
 			"<td>" + strconv.Itoa(row.Peercount) + "</td>" +
+			"<td>" + strconv.Itoa(row.Blocknumber) + "</td>" +
 			"<td>" + row.Ts.UTC().Format("2006-01-02 15:04 UTC") + "</td>" +
 			"</tr>"
 	}
