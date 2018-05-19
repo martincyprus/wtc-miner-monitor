@@ -19,15 +19,10 @@ func buildHtml() string {
 	nodeIDs := getAllNodeIds(db)
 	var html string
 	html = `<html> 
-	<head>
-		<link rel="stylesheet" href="http://thisisdallas.github.io/Simple-Grid/simpleGrid.css">
-  </head>
+
 	<body> 
  `
-	html += `<div class="grid grid-pad">
-	 <div class="col-1-3">
-       <div class="content">
-		<h1>Latest Hash By Nodes</h1>`
+	html += `<h1>Latest Hash By Nodes</h1>`
 	html += "<h2>Time now: " + time.Now().UTC().Format("2006-01-02 15:04 UTC") + "</h2>"
 
 	html += "<table border = 2 cellpadding=2><tr><th>NodeID</th><th>Name</th><th>h/s</th><th>Peer Count</th><th>Last datapoint</th></tr>"
@@ -41,26 +36,8 @@ func buildHtml() string {
 			"</tr>"
 	}
 	html += `</table>
-       </div>
-   	 </div>
-	<div class="col-1-3">
-       <div class="content">
-		<h1>Latest Total Hashes</h1>`
-	totalHashes := getLatestTotalHash(db)
-	html += "<table border = 2 cellpadding=2><tr><th>Timestamp</th><th>Total h/s</th><th>Number of Nodes(" + strconv.Itoa(len(nodeIDs)) + ")</th></tr>"
-	for _, row := range totalHashes {
-		html += "<tr>" +
-			"<td>" + row.Tstamp + "</td>" +
-			"<td>" + strconv.Itoa(row.TotalHash) + "</td>" +
-			"<td>" + strconv.Itoa(row.NumberOfNodes) + "</td>" +
-			"</tr>"
-	}
-	html += `</table>
-	</div>
-		</div>
-	<div class="col-1-3">
-       <div class="content">
-		<h1>Average Hashes (2h)</h1>`
+	<br><br>
+		<h1>Average Hashes (10h)</h1>`
 	averageHashes := getAverageHash(db)
 	html += "<table border = 2 cellpadding=2><tr><th>Nodeid</th><th>Nodename</th><th>Aveage Hash</th></tr>"
 	for _, row := range averageHashes {
@@ -71,12 +48,18 @@ func buildHtml() string {
 			"</tr>"
 	}
 	html += `</table>
-	</div>
-		</div>		
-		
-		
-	</div>`
-
+       <br><br>
+		<h1>Latest Total Hashes</h1>`
+	totalHashes := getLatestTotalHash(db)
+	html += "<table border = 2 cellpadding=2><tr><th>Timestamp</th><th>Total h/s</th><th>Number of Nodes(" + strconv.Itoa(len(nodeIDs)) + ")</th></tr>"
+	for _, row := range totalHashes {
+		html += "<tr>" +
+			"<td>" + row.Tstamp + "</td>" +
+			"<td>" + strconv.Itoa(row.TotalHash) + "</td>" +
+			"<td>" + strconv.Itoa(row.NumberOfNodes) + "</td>" +
+			"</tr>"
+	}
+	html += `</table>`
 	html += "</body></html>"
 	return html
 }

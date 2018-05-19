@@ -99,7 +99,7 @@ func getAverageHash(db *sql.DB) []AverageHash {
 }
 
 func cleanupOldRecords(db *sql.DB) {
-	sql_readall := `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-2 hours');`
+	sql_readall := `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-10 hours');`
 	stmt, err := db.Prepare(sql_readall)
 	checkErr(err)
 	_, err = stmt.Exec()
@@ -107,7 +107,7 @@ func cleanupOldRecords(db *sql.DB) {
 }
 
 func checkForStoppedNodes(db *sql.DB) []HashlogItem {
-	sql := `select * from latest_node_data where (datetime(ts,'utc') <= datetime('now', '-5 minutes') and datetime(ts,'utc') >= datetime('now', '-9 minutes')) OR (datetime(ts,'utc') >= datetime('now', '-59 minutes') and datetime(ts,'utc') <= datetime('now', '-56 minutes'));`
+	sql := `select * from latest_node_data where (datetime(ts,'utc') <= datetime('now', '-4 minutes') and datetime(ts,'utc') >= datetime('now', '-8 minutes')) OR (datetime(ts,'utc') >= datetime('now', '-59 minutes') and datetime(ts,'utc') <= datetime('now', '-56 minutes'));`
 	rows, err := db.Query(sql)
 	if err != nil {
 		return nil
