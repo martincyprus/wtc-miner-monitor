@@ -26,7 +26,7 @@ type Configuration struct {
 	Mode             string
 	WaltonClientPath string
 	GpuMinerLocation string
-	RpcPort          string
+	RpcPort          int
 }
 
 func main() {
@@ -61,7 +61,7 @@ func createAPackage(configuration Configuration) {
 	s.Ip = conn.LocalAddr().String()
 	s.Peercount = getPeerCount()
 	s.BlockNumber = getBlockNumber()
-	fmt.Printf("Block number: %v Peer count: %v Hashrate: %v", s.BlockNumber, s.Peercount, s.Hashrate)
+	fmt.Printf("Block number: %v Peer count: %v Hashrate: %v \n", s.BlockNumber, s.Peercount, s.Hashrate)
 	data, err := json.Marshal(s)
 	if err != nil {
 		fmt.Printf("unable to marshal packat into a json object: %s", err)
@@ -206,7 +206,7 @@ func validateClientConfig(configuration Configuration) {
 	//Check Mode GPU or CPU
 	if configuration.Mode == "GPU" {
 		fmt.Println("GPU")
-		location := configuration.GpuMinerLocation + `\\ming_run.exe`
+		location := configuration.GpuMinerLocation
 		if _, err := os.Stat(location); os.IsNotExist(err) {
 			fmt.Println(location)
 			fmt.Printf(`Validation failed on config.json: ming.exe does not appear to exist at the GpuMinerLocation, please provide a path to the location of ming_run.exe and use double \\ for \ e.g. C:\\Program Files\\WTC\\Walton-GPU-64\\GPUMing_v0.2` + "\n")
@@ -221,13 +221,11 @@ func validateClientConfig(configuration Configuration) {
 	}
 
 	//Check that rpc port is a number and that the rpc server is listening on it
-	if _, err := strconv.ParseInt(configuration.RpcPort, 10, 64); err != nil {
-		fmt.Printf("Validation failed on config.json: Server Port is not a number, it is: %v \n", configuration.RpcPort)
-		os.Exit(3)
-	}
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort("localhost", configuration.RpcPort), time.Duration(1)*time.Second)
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort("", strconv.Itoa(configuration.RpcPort)), time.Duration(1)*time.Second)
 	if err != nil {
 		fmt.Println("Validation failed on config.json: unable connect to rpc port on local machine", configuration.RpcPort)
+		conn.Close()
+		os.Exit(3)
 	}
 	conn.Close()
 
@@ -246,7 +244,7 @@ func createPeerBat(configuration Configuration) {
 		os.Exit(3)
 	}
 	w := bufio.NewWriter(f)
-	peerBatCommand := configuration.WaltonClientPath + " attach http://localhost:" + configuration.RpcPort + " --exec net.peerCount\n"
+	peerBatCommand := `"` + configuration.WaltonClientPath + `" attach http://localhost:` + strconv.Itoa(configuration.RpcPort) + " --exec net.peerCount\n"
 	_, err = w.WriteString(peerBatCommand)
 	w.Flush()
 	f.Close()
@@ -260,7 +258,7 @@ func createCpuHashBat(configuration Configuration) {
 		os.Exit(3)
 	}
 	w := bufio.NewWriter(f)
-	cpuHashCommand := configuration.WaltonClientPath + " attach http://localhost:" + configuration.RpcPort + " --exec eth.hashrate\n"
+	cpuHashCommand := `"` + configuration.WaltonClientPath + `" attach http://localhost:` + strconv.Itoa(configuration.RpcPort) + " --exec eth.hashrate\n"
 	_, err = w.WriteString(cpuHashCommand)
 	w.Flush()
 	f.Close()
@@ -273,7 +271,7 @@ func createBlockNumberBat(configuration Configuration) {
 		os.Exit(3)
 	}
 	w := bufio.NewWriter(f)
-	blockNumberCommand := configuration.WaltonClientPath + " attach http://localhost:" + configuration.RpcPort + " --exec eth.blockNumber\n"
+	blockNumberCommand := `"` + configuration.WaltonClientPath + `" attach http://localhost:` + strconv.Itoa(configuration.RpcPort) + " --exec eth.blockNumber\n"
 	_, err = w.WriteString(blockNumberCommand)
 	w.Flush()
 	f.Close()
