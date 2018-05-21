@@ -99,8 +99,8 @@ func getAverageHash(db *sql.DB) []AverageHash {
 	return result
 }
 
-func cleanupOldRecords(db *sql.DB) {
-	sql_readall := `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-10 hours');`
+func cleanupOldRecords(db *sql.DB, hours int) {
+	sql_readall := `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-` + strconv.Itoa(hours) + ` hours');`
 	stmt, err := db.Prepare(sql_readall)
 	checkErr(err)
 	_, err = stmt.Exec()

@@ -14,10 +14,10 @@ If you want me to solve a specific problem or expand the feature list a donation
 I can be found on the walton slack as <b>martin_cy</b> you can also send me messages on reddit also under <b>martin_cy</b> and finally you can find me on telegram with username: <b>@Martin0cy</b> (https://t.me/Martin0cy)
 
 # Features
-It is made up of 2 parts, Server and Client, all communcation between server and client is encrypted, it is based on the client will push their information to the server that will collect all the clients' information and give two simple tables as username/password protected web page where you can see hashrate of each node, how many peers it has and when it reported in last.
+It is made up of 2 parts, Server and Client, all communcation between server and client is encrypted, it is based on the client will push their information to the server that will collect all the clients' information and give three simple tables as a username/password protected web page where you can see hashrate, latest block number, and number of peers of each node, as of latest report (default every 50-60 seconds).
 
 ## Server
-The server takes all the messages sent from the clients and put them into a very simple sqlite database, it will only keep data for 2 hours, this is configured like this to remain fast and light. "Node Down" notifications are sent 5 minutes after a nodes last message, between 1-3 messages will be sent in the windows of 5-8 minutes, then also another 2-3 messages will be sent 1h after it has been down after that no more notifications will be sent concerning that node. Any time a node reports 0 peers you will get a message every 100 seconds. (this can get very spammy and is on my list of todos). 
+The server takes all the messages sent from the clients and put them into a very simple sqlite database, it will keep data according to KeepLogsHours, for the web page to be fast and responsive keep the following in mind, 10 miners, and 10h of data will load in 2 second, double the time or nodes and your time to load will double, its fairly linair. "Node Down" notifications are sent 5 minutes after a nodes last message, between 1-3 messages will be sent in the window of 5-8 minutes, then also another 1-2 messages will be sent 1h after it has been down after that no more notifications will be sent concerning that node. Any time a node reports 0 peers you will get a message every 100 seconds. (this can get very spammy and is on my list of todos). 
 
 the server package will have the following content:
 * server.exe
@@ -30,15 +30,16 @@ this is a simple sqlite database that comes empty with some predefined views and
 ###server-config.conf 
 has the following content:
 <pre>
-        "MPort": "3333",
-        "WEBPORT":"8081",
+        "MPort": 3333,
+        "WEBPORT":8081,
         "EncryptionKey": "blabla1223123456",
         "WEBUsername": "username",
         "WEBPassword":  "password1",
         "UseTelegramBot":"YES",
         "TelegramBotAPIKey":"Full_botID",
         "TelegramChannelID":"your_personal_channelID",
-        "Debug":"YES"
+        "Debug":"YES",
+		"KeepLogsHours":4
 </pre>
 
 
@@ -61,30 +62,28 @@ Password to login to the web page with miner statistics
 If you want to use the telegramBot option for notifications, see bellow for instructions on how to setup your bot. (yes/no). If you do not want to use Telegram the Node Down or 0 Peer count are just written in the server window, also it will show on the web page.
 
 #### TelegramBotAPIKey
-Your full telegram API botkey
+Your full telegram API botkey, should look like something like this: bot123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11 (important include the "bot" in the beginning.)
 
 #### TelegramChannelID
-your private channel ID with your notification bot.
-
-Once you have configured the above parameters you can just double click start the server.exe
+your private channel ID with your notification bot, this can also be a group/channel ids, (group Id's start with "-100" be sure to include the "-" if its a group id)
 
 #### Debug
 print out all the data sent to server from clients
+
+#### KeepLogsHours
+this configurs when data is cleaned from the database, in hours. Imagine you have 10 nodes, each report to the server every 1 minute, so in 60 minutes you would have 600 entries, in 10h you would have 6000 entries, the statistics page slows down as amount of data goes up as it is a bigger dataset to aggregate and search for the information. I would recommend to keep the total data for a fast responsive page to be around the 4000-6000 entries. then the page should load in sub 2 seconds. Configure according to your needs.
+
+Once you have configured the above parameters you can just double click start the server.exe, if it exists means that some of the parameters might not be configured correctly, please start it manually from a command line and read the output carefully, and correct the problem.
 
 ## Client
 The client is something you have to run on each node and configure for each specific node. It comes with the following files:
 * client.exe
 * config.json
-* cpuHash.bat
-* peer.bat
 
-The client can track either CPU or GPU hashing, and it also tracks peer count. By default in CPU mode it checks the CPU hashrate by calling the cpuHash.bat about 6 times per minute and then doing an average hash rate and then send it to the server every minute, when running GPU it will sample every every second and then calculate the minute average and report that to the server, together with the peer count, which it gets by running the peer.bat.
 
-### cpuHash.bat
-verify paths and RPC ports, if using different then default
+The client can track either CPU or GPU hashing, and it also tracks peer count and blockNumber. Running the first time, and assuming it passes the config file validation 3 bat files are created: cpuHash.bat, peer.bat, blockNumber.bat. These are all simple script that will just extract those specific things from your miner and send to the server.
 
-### peer.bat
-verify paths and RPC ports, if using different then default
+ By default in CPU mode it checks the CPU hashrate by calling the cpuHash.bat about 6 times per minute and then doing an average hash rate and then send it to the server every minute, when running GPU it will sample every second and then calculate the minute average and report that to the server, together with the peer count, and blockNumber.
 
 ### config.json
 <pre>
@@ -94,8 +93,9 @@ verify paths and RPC ports, if using different then default
         "EncryptionKey": "blabla1223123456",
         "Frequency": 60,
         "Mode":"GPU",
-        "CpuMinerWalletLocation":"C:\\Program Files\\WTC",
-        "GpuMinerLocation":"C:\\Program Files\\WTC\\Walton-GPU-64\\GPUMing_v0.2"
+        "WaltonClientPath":"C:\\Program Files\\WTC\\walton.exe",
+        "GpuMinerLocation":"C:\\Program Files\\WTC\\Walton-GPU-64\\GPUMing_v0.2",
+		"RpcPort":8545
 </pre>
 
 #### Id
@@ -117,25 +117,26 @@ How often clients should report to server, I recommend to leave it at 60, (have 
 This can be either "CPU" or "GPU" this is case sensitive.
 
 #### CpuMinerWalletLocation
-This should be the path to where your "walton.exe" lives
+This shold be the full path to a walton.exe, make sure to do double "\" e.g. "C:\\Program Files\\WTC\\walton.exe"
 
 #### GpuMinerLocation
-this only really matters if you are doing GPU mining. This is the path to where your ming_run.exe lives, and where your "0202001" file lives.
+this only really matters if you are doing GPU mining. This is the path to where your ming_run.exe lives, and where your "0202001" file lives. when running Multi-GPU its that is just report a static hashrate, this normal mean that this path is pointing to the wrong "0202001" file, please point it to the directoy where the correct 0202001 file is located.
 
 ### client.exe
-once server is running, and local mining has been started and the config has been filed in just double click it. it will take 60 seconds before you see the first line writing out your hash and peer count, and at that point you will also see a line on the server. Yes of course you can run client.exe on the same machine as you run server.exe.
+once server is running, and local mining has been started and the config has been filed in just double click it. it will take 60 seconds before you see the first line writing out your hash and peer and blockNumber count, and at that point you will also see a line on the server. Yes of course you can run client.exe on the same machine as you run server.exe.
 
 
 # Checking things while its running
 * In a web browser just go to: http://" the IP of the machine you are running the server on ":" web port number" e.g. http://1.1.1.1:8081
 * supply the username/password you put in the server-config.json
 * Everytime you reload the page the data is updated as can be seen from the "Current UTC time" changes
-You should start seeing 2 tables: 
-* The left most will contain latest data from all nodes, their hash rate, and peer count and when last they checked in. 
-* The right hand table will show your aggregated hashing power for each minute. (node count shows how how many nodes reported in that minute, it is possible it shows more then your total node count, it is a known bug but mostly it will show correctly)
+You should start seeing 3 tables: 
+* The first will contain latest data from all nodes, their hash rate, and peer count, latest blockNumber and when last checkin. 
+* The second table will show the average hashrate per node, based on the "KeepLogsHours" number of hours.
+* The third table will show your aggregated hashing power for each minute. (node count shows how how many nodes reported in that minute, it is possible it shows more then your total node count, it is a known bug but mostly it will show correctly)
 
 # Using this monitor for Multi-GPU rigs
-This should be possible, I dont have one so have not tried it. You will have to run 1 client per GPU and make sure the paths are setup correctly in config.json per client, and that the peer.bat paths are also correct.
+Monitor can monitor Multi-GPU. just create a folder for each GPU, and configure each config.json accordingly, the things to extra care about is the RpcPort and NodeId/name since it should be different from the the clients.
 
 # Building it yourself
 Assuming some basic Go knowledge and a correct setup Go environment.

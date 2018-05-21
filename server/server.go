@@ -27,8 +27,8 @@ const (
 )
 
 type Configuration struct {
-	MPort             string
-	WEBPORT           string
+	MPort             int
+	WEBPORT           int
 	EncryptionKey     string
 	WEBUsername       string
 	WEBPassword       string
@@ -36,6 +36,7 @@ type Configuration struct {
 	TelegramBotAPIKey string
 	TelegramChannelID string
 	Debug             string
+	KeepLogsHours     int
 }
 
 func main() {
@@ -55,15 +56,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+	l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+strconv.Itoa(CONN_PORT))
 	if err != nil {
 		fmt.Println("Error starting message listening service: %s", err.Error())
 		os.Exit(1)
 	}
 	// Close the listener when the application closes.
 	defer l.Close()
-	fmt.Println("Listening for miner connections on Port:" + CONN_PORT)
-	fmt.Println("Web page is listening on Port:" + configuration.WEBPORT)
+	fmt.Println("Listening for miner connections on Port:" + strconv.Itoa(CONN_PORT))
+	fmt.Println("Web page is listening on Port:" + strconv.Itoa(configuration.WEBPORT))
 
 	go func() {
 		for {
@@ -97,7 +98,7 @@ func main() {
 				}
 			}
 
-			cleanupOldRecords(db)
+			cleanupOldRecords(db, configuration.KeepLogsHours)
 		}
 	}()
 
@@ -204,12 +205,12 @@ func handleRequest(conn net.Conn, db *sql.DB, configuration Configuration) {
 func validateServerConfig(configuration Configuration) {
 
 	//check MPort
-	if _, err := strconv.ParseInt(configuration.MPort, 10, 64); err != nil {
+	if configuration.MPort < 1 {
 		fmt.Printf("Validation failed on server-config.json: MPort is not a number, it is: %v \n", configuration.MPort)
 		os.Exit(3)
 	}
 
-	if _, err := strconv.ParseInt(configuration.WEBPORT, 10, 64); err != nil {
+	if configuration.WEBPORT < 1 {
 		fmt.Printf("Validation failed on server-config.json: WEBPORT is not a number, it is: %v \n", configuration.WEBPORT)
 		os.Exit(3)
 	}
@@ -240,5 +241,9 @@ func validateServerConfig(configuration Configuration) {
 			os.Exit(3)
 
 		}
+	}
+	if configuration.KeepLogsHours < 1 {
+		fmt.Printf("Validation failed on server-config.json: KeepLogsHours less then 1, please use a number between 1 and 20, it is: %v \n", configuration.KeepLogsHours)
+		os.Exit(3)
 	}
 }

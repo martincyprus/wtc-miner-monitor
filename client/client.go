@@ -47,33 +47,51 @@ func main() {
 	}
 }
 
+func recoverPackage() {
+	if r := recover(); r != nil {
+		fmt.Println("Recovered from: ", r)
+	}
+}
+
 func createAPackage(configuration Configuration) {
+	defer recoverPackage()
 	var s wtcPayload.WtcPayload
 	s.Hashrate = getHash(configuration)
+	s.Peercount = getPeerCount()
+	s.BlockNumber = getBlockNumber()
 	conn, err := net.Dial("tcp", configuration.Server)
 	if err != nil {
-		fmt.Printf("Unable to make a connection object: %s", err)
+		fmt.Printf("Unable to make a connection object: %s\n", err)
+		fmt.Println("Will try again in a minute")
+		fmt.Println("Following stats were not sent to server")
+		fmt.Printf("Block number: %v Peer count: %v Hashrate: %v \n", s.BlockNumber, s.Peercount, s.Hashrate)
+		return
 	}
 	key := []byte(configuration.EncryptionKey)
 	s.Id = configuration.Id
 	s.Name = configuration.Name
 	s.Ts = time.Now()
 	s.Ip = conn.LocalAddr().String()
-	s.Peercount = getPeerCount()
-	s.BlockNumber = getBlockNumber()
 	fmt.Printf("Block number: %v Peer count: %v Hashrate: %v \n", s.BlockNumber, s.Peercount, s.Hashrate)
+
 	data, err := json.Marshal(s)
 	if err != nil {
-		fmt.Printf("unable to marshal packat into a json object: %s", err)
+		fmt.Printf("unable to marshal packat into a json object: %s\n", err)
+		fmt.Println("Stats were not sent to server")
+		return
 	}
 	encryptedData, err := aesEncryption.Encrypt(key, string(data))
 	if err != nil {
 		fmt.Printf("encryption problem: %s", err)
+		fmt.Println("Stats were not sent to server")
+		return
 	}
 
 	_, err = conn.Write([]byte(encryptedData))
 	if err != nil {
-		fmt.Printf("Unable to write data to server %s", err)
+		fmt.Printf("Unable to write data to server %s\n", err)
+		fmt.Println("Stats were not sent to server")
+		return
 	}
 }
 
