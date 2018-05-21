@@ -38,9 +38,9 @@ func buildHtml() string {
 	}
 	html += `</table>
 	<br><br>
-		<h1>Average Hashes (10h)</h1>`
+		<h1>Average Hashes</h1>`
 	averageHashes := getAverageHash(db)
-	html += "<table border = 2 cellpadding=2><tr><th>Nodeid</th><th>Nodename</th><th>Aveage Hash</th></tr>"
+	html += "<table border = 2 cellpadding=2><tr><th>Nodeid</th><th>Nodename</th><th>Average Hash</th></tr>"
 	for _, row := range averageHashes {
 		html += "<tr>" +
 			"<td>" + strconv.Itoa(row.Nodeid) + "</td>" +

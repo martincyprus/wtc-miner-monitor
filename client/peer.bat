@@ -1,1 +1,0 @@
-"c:\Program Files\\WTC\walton.exe" attach http://localhost:8545 --exec net.peerCount
