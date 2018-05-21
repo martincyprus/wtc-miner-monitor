@@ -7,6 +7,6 @@
 	"UseTelegramBot":"YES",
 	"TelegramBotAPIKey":"Full_botID",
 	"TelegramChannelID":"your_personal_channelID",
-	"MinerAddress":"you miner address",
 	"Debug":"YES"
+	"KeepLogsHours":6
 }

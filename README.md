@@ -133,10 +133,10 @@ once server is running, and local mining has been started and the config has bee
 You should start seeing 3 tables: 
 * The first will contain latest data from all nodes, their hash rate, and peer count, latest blockNumber and when last checkin. 
 * The second table will show the average hashrate per node, based on the "KeepLogsHours" number of hours.
-* The third table will show your aggregated hashing power for each minute. (node count shows how how many nodes reported in that minute, it is possible it shows more then your total node count, it is a known bug but mostly it will show correctly)
+* The third table will show your aggregated hashing power for each minute. (node count shows how how many nodes reported in that minute, it is possible it shows more or less then your total node count, it is a known "feature" but mostly it will show correctly)
 
 # Using this monitor for Multi-GPU rigs
-Monitor can monitor Multi-GPU. just create a folder for each GPU, and configure each config.json accordingly, the things to extra care about is the RpcPort and NodeId/name since it should be different from the the clients.
+It is possible to monitor Multi-GPU setups. Just create a client folder for each GPU, and configure each config.json accordingly, the things to take extra care about is the RpcPort and NodeId/name since it should be different from the other clients, and the RPC port should match what is in the start_gpu.bat for the node you are monitoring.
 
 # Building it yourself
 Assuming some basic Go knowledge and a correct setup Go environment.

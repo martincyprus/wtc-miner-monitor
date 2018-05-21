@@ -1,20 +1,17 @@
 {
+	
 	"Id": 1,
 
-    "Name":"comp1",
 
-    "Server": "0.0.0.0:3333",
-
+	"Name":"comp1",
+	"Server": "0.0.0.0:3333",
 	"EncryptionKey": "blabla1223123456",
-
 	"Frequency": 60,
-
 	"Mode":"CPU",
-
 	"WaltonClientPath":"C:\\Program Files\\WTC\\walton.exe",
-
 	"GpuMinerLocation":"C:\\Program Files\\WTC\\Walton-GPU-64\\GPUMing_v0.2",
-	
+
 	"RpcPort":"8545"
+
 
 }
