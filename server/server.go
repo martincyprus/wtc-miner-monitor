@@ -17,6 +17,7 @@ import (
 	"wtc-miner-monitor/aesEncryption"
 	"wtc-miner-monitor/wtcPayload"
 
+	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/tkanos/gonfig"
 )
@@ -37,9 +38,11 @@ type Configuration struct {
 	TelegramChannelID string
 	Debug             string
 	KeepLogsHours     int
+	UsePostgres       string
 }
 
 func main() {
+
 	configuration := Configuration{}
 	err := gonfig.GetConf("server-config.json", &configuration)
 	if err != nil {
@@ -48,13 +51,26 @@ func main() {
 	}
 
 	validateServerConfig(configuration)
-	CONN_PORT := configuration.MPort
 
-	db, err := sql.Open("sqlite3", "./db.db")
-	if err != nil {
-		fmt.Println("Error opening SQLITE DB: %s", err.Error())
-		os.Exit(1)
+	var db *sql.DB
+	if strings.ToUpper(configuration.UsePostgres) == "YES" {
+		fmt.Println("YES")
+		connStr := "host=localhost user=postgres dbname=postgres sslmode=disable"
+		db, err = sql.Open("postgres", connStr)
+		if err != nil {
+			fmt.Println("Error opening SQLITE DB: %s", err.Error())
+			os.Exit(1)
+		}
+		db = verifyHashDatabaseExists(db)
+	} else {
+		db, err = sql.Open("sqlite3", "./db.db")
+		if err != nil {
+			fmt.Println("Error opening SQLITE DB: %s", err.Error())
+			os.Exit(1)
+		}
 	}
+
+	CONN_PORT := configuration.MPort
 
 	l, err := net.Listen(CONN_TYPE, CONN_HOST+":"+strconv.Itoa(CONN_PORT))
 	if err != nil {
@@ -245,5 +261,85 @@ func validateServerConfig(configuration Configuration) {
 	if configuration.KeepLogsHours < 1 {
 		fmt.Printf("Validation failed on server-config.json: KeepLogsHours less then 1, please use a number between 1 and 20, it is: %v \n", configuration.KeepLogsHours)
 		os.Exit(3)
+	}
+}
+
+func verifyHashDatabaseExists(db *sql.DB) *sql.DB {
+	fmt.Println("IN IT")
+	sqlQ := "SELECT count(*) as dbExists FROM pg_database WHERE datname='hashdb'"
+	rows, err := db.Query(sqlQ)
+	if err != nil {
+		panic(err)
+	}
+	var dbExists int
+	err = rows.Scan(&dbExists)
+	if dbExists == 1 {
+		fmt.Println("DB exists")
+		db.Close()
+		connStr := "host=localhost user=postgres dbname=hashdb sslmode=disable"
+		db, err := sql.Open("postgres", connStr)
+		if err != nil {
+			panic(err)
+		}
+		return db
+	} else {
+		fmt.Println("Doesn't exist")
+		sqlQ = "create database hashdb;"
+		rows, err = db.Query(sqlQ)
+		if err != nil {
+			panic(err)
+		}
+		db.Close()
+		connStr := "host=localhost user=postgres dbname=hashdb sslmode=disable"
+		db, err = sql.Open("postgres", connStr)
+
+		sqlQ = `
+-- Table: public.hashlog
+
+-- DROP TABLE public.hashlog;
+
+CREATE TABLE public.hashlog
+(
+    nodeid integer NOT NULL,
+    nodename text COLLATE pg_catalog."default" NOT NULL,
+    ts timestamp without time zone NOT NULL,
+    hashrate integer NOT NULL,
+    ip text COLLATE pg_catalog."default" NOT NULL,
+    peercount integer NOT NULL,
+    blocknumber integer NOT NULL,
+    CONSTRAINT hashlog_pkey PRIMARY KEY (nodeid)
+)
+WITH (
+    OIDS = FALSE
+)
+TABLESPACE pg_default;
+
+ALTER TABLE public.hashlog
+    OWNER to postgres;
+
+-- Index: hashlog_name_idx
+
+-- DROP INDEX public.hashlog_name_idx;
+
+CREATE INDEX hashlog_name_idx
+    ON public.hashlog USING btree
+    (nodename COLLATE pg_catalog."default")
+    TABLESPACE pg_default;
+
+-- Index: hashlog_ts_idx
+
+-- DROP INDEX public.hashlog_ts_idx;
+
+CREATE INDEX hashlog_ts_idx
+    ON public.hashlog USING btree
+    (ts)
+    TABLESPACE pg_default;
+`
+		_, err = db.Query(sqlQ)
+		if err != nil {
+			panic(err)
+		}
+
+		return db
 	}
 }
