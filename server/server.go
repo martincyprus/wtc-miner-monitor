@@ -117,7 +117,7 @@ func main() {
 
 	http.HandleFunc("/", BasicAuth(handle, configuration.WEBUsername, configuration.WEBPassword, "Please enter your username and password for this site"))
 
-	log.Fatal(http.ListenAndServe(":8081", nil))
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(configuration.WEBPORT), nil))
 
 }
 
