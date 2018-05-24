@@ -116,7 +116,7 @@ How often clients should report to server, I recommend to leave it at 60, (have 
 #### Mode
 This can be either "CPU" or "GPU" this is case sensitive.
 
-#### CpuMinerWalletLocation
+#### WaltonClientPath
 This shold be the full path to a walton.exe, make sure to do double "\" e.g. "C:\\Program Files\\WTC\\walton.exe"
 
 #### GpuMinerLocation
