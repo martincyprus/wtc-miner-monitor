@@ -41,6 +41,9 @@ type Configuration struct {
 	UsePostgres       string
 }
 
+var Db *sql.DB
+var Postgres bool
+
 func main() {
 
 	configuration := Configuration{}
@@ -50,25 +53,27 @@ func main() {
 		os.Exit(3)
 	}
 
-	validateServerConfig(configuration)
-
-	var db *sql.DB
 	if strings.ToUpper(configuration.UsePostgres) == "YES" {
+		Postgres = true
 		fmt.Println("YES")
 		connStr := "host=localhost user=postgres dbname=postgres sslmode=disable"
-		db, err = sql.Open("postgres", connStr)
+		Db, err = sql.Open("postgres", connStr)
 		if err != nil {
 			fmt.Println("Error opening SQLITE DB: %s", err.Error())
 			os.Exit(1)
 		}
-		db = verifyHashDatabaseExists(db)
+		Db = verifyHashDatabaseExists(Db)
 	} else {
-		db, err = sql.Open("sqlite3", "./db.db")
+		Postgres = false
+		Db, err = sql.Open("sqlite3", "./db.db")
 		if err != nil {
 			fmt.Println("Error opening SQLITE DB: %s", err.Error())
 			os.Exit(1)
 		}
 	}
+
+	os.Exit(3)
+	validateServerConfig(configuration)
 
 	CONN_PORT := configuration.MPort
 
@@ -85,7 +90,7 @@ func main() {
 	go func() {
 		for {
 			time.Sleep(time.Duration(100) * time.Second)
-			stoppedNodes := checkForStoppedNodes(db)
+			stoppedNodes := checkForStoppedNodes(Db, Postgres)
 			for _, row := range stoppedNodes {
 				if strings.ToUpper(configuration.UseTelegramBot) == "YES" {
 					nodeIsDownTelegram(row, configuration)
@@ -99,7 +104,7 @@ func main() {
 
 				}
 			}
-			stoppedNodes = checkForZeroPeers(db)
+			stoppedNodes = checkForZeroPeers(Db)
 			for _, row := range stoppedNodes {
 				if strings.ToUpper(configuration.UseTelegramBot) == "YES" {
 					zeroPeersTelegram(row, configuration)
@@ -114,7 +119,7 @@ func main() {
 				}
 			}
 
-			cleanupOldRecords(db, configuration.KeepLogsHours)
+			cleanupOldRecords(Db, configuration.KeepLogsHours, Postgres)
 		}
 	}()
 
@@ -127,7 +132,7 @@ func main() {
 				os.Exit(1)
 			}
 			// Handle connections in a new goroutine.
-			go handleRequest(conn, db, configuration)
+			go handleRequest(conn, Db, configuration)
 		}
 	}()
 
@@ -165,7 +170,7 @@ func checkErr(err error) {
 }
 
 // Handles incoming requests.
-func handleRequest(conn net.Conn, db *sql.DB, configuration Configuration) {
+func handleRequest(conn net.Conn, Db *sql.DB, configuration Configuration) {
 	// Make a buffer to hold incoming data.
 	buf := make([]byte, 1024)
 	// Read the incoming connection into the buffer.
@@ -205,7 +210,7 @@ func handleRequest(conn net.Conn, db *sql.DB, configuration Configuration) {
 	// Close the connection when you're done with it.
 	conn.Close()
 
-	stmt, err := db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount,blocknumber) values(?,?,?,?,?,?,?)")
+	stmt, err := Db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount,blocknumber) values(?,?,?,?,?,?,?)")
 	if err != nil {
 		fmt.Println("Bad values unable to make proper SQL statement error was: ", err)
 		return
@@ -294,20 +299,17 @@ func verifyHashDatabaseExists(db *sql.DB) *sql.DB {
 		db, err = sql.Open("postgres", connStr)
 
 		sqlQ = `
--- Table: public.hashlog
-
--- DROP TABLE public.hashlog;
-
 CREATE TABLE public.hashlog
 (
-    nodeid integer NOT NULL,
-    nodename text COLLATE pg_catalog."default" NOT NULL,
+    id serial,
+	nodeid integer NOT NULL,
+    nodename text NOT NULL,
     ts timestamp without time zone NOT NULL,
     hashrate integer NOT NULL,
-    ip text COLLATE pg_catalog."default" NOT NULL,
+    ip text NOT NULL,
     peercount integer NOT NULL,
     blocknumber integer NOT NULL,
-    CONSTRAINT hashlog_pkey PRIMARY KEY (nodeid)
+    CONSTRAINT hashlog_pkey PRIMARY KEY (id)
 )
 WITH (
     OIDS = FALSE
@@ -317,25 +319,36 @@ TABLESPACE pg_default;
 ALTER TABLE public.hashlog
     OWNER to postgres;
 
--- Index: hashlog_name_idx
-
--- DROP INDEX public.hashlog_name_idx;
-
 CREATE INDEX hashlog_name_idx
     ON public.hashlog USING btree
     (nodename COLLATE pg_catalog."default")
     TABLESPACE pg_default;
 
--- Index: hashlog_ts_idx
+CREATE INDEX hashlog_nodeid_idx
+    ON public.hashlog USING btree
+    (nodeid)
+    TABLESPACE pg_default;
 
--- DROP INDEX public.hashlog_ts_idx;
 
 CREATE INDEX hashlog_ts_idx
     ON public.hashlog USING btree
     (ts)
     TABLESPACE pg_default;
+	
+CREATE VIEW latest_node_data(nodeid,nodename,ts,hashrate,ip,peercount, blocknumber) 
+as SELECT t1.nodeid,t1.nodename,t1.ts,t1.hashrate,t1.ip,t1.peercount, t1.blocknumber 
+FROM hashlog t1 
+LEFT OUTER JOIN hashlog t2
+ON t1.nodeid = t2.nodeid 
+AND t1.ts < t2.ts
+WHERE t2.nodeid IS NULL
+ORDER BY t1.ts;
+
+CREATE or REPLACE VIEW average_hash_by_node(nodeid,nodename,hashrate) as select nodeid, nodename, round(avg(hashrate)) from hashlog group by nodeid,nodename;
+
+
 `
-		_, err = db.Query(sqlQ)
+		_, err = Db.Query(sqlQ)
 		if err != nil {
 			panic(err)
 		}

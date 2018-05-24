@@ -49,10 +49,14 @@ type TotalHash struct {
 	NumberOfNodes int
 }
 
-func getLatestTotalHash(db *sql.DB) []TotalHash {
+func getLatestTotalHash(db *sql.DB, postgres bool) []TotalHash {
 
-	sql_readall := `select strftime('%Y-%m-%d %H:%M', ts) as tstamp,sum(hashrate) as totalhash,count(*) as numberOfNodes from hashlog group by strftime('%Y-%m-%d %H:%M', ts) order by strftime('%Y-%m-%d %H:%M', ts) desc limit 10;`
-
+	var sql_readall string
+	if postgres {
+		sql_readall = `select to_char(ts, 'YYYY-MM-DD H24:MI')  as tstamp,sum(hashrate) as totalhash,count(*) as numberOfNodes from hashlog group by to_char(ts, 'YYYY-MM-DD H24:MI') order by to_char(ts, 'YYYY-MM-DD H24:MI') desc limit 10;`
+	} else {
+		sql_readall = `select strftime('%Y-%m-%d %H:%M', ts) as tstamp,sum(hashrate) as totalhash,count(*) as numberOfNodes from hashlog group by strftime('%Y-%m-%d %H:%M', ts) order by strftime('%Y-%m-%d %H:%M', ts) desc limit 10;`
+	}
 	rows, err := db.Query(sql_readall)
 	if err != nil {
 		panic(err)
@@ -99,17 +103,28 @@ func getAverageHash(db *sql.DB) []AverageHash {
 	return result
 }
 
-func cleanupOldRecords(db *sql.DB, hours int) {
-	sql_readall := `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-` + strconv.Itoa(hours) + ` hours');`
+func cleanupOldRecords(db *sql.DB, hours int, postgres bool) {
+	var sql_readall string
+	if postgres {
+		sql_readall = `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-` + strconv.Itoa(hours) + ` hours');`
+	} else {
+		sql_readall = `where ts < now() - interval '` + strconv.Itoa(hours) + ` hours';`
+	}
 	stmt, err := db.Prepare(sql_readall)
 	checkErr(err)
 	_, err = stmt.Exec()
 	checkErr(err)
 }
 
-func checkForStoppedNodes(db *sql.DB) []HashlogItem {
-	sql := `select * from latest_node_data where (datetime(ts,'utc') <= datetime('now', '-4 minutes') and datetime(ts,'utc') >= datetime('now', '-8 minutes')) OR (datetime(ts,'utc') >= datetime('now', '-59 minutes') and datetime(ts,'utc') <= datetime('now', '-56 minutes'));`
-	rows, err := db.Query(sql)
+func checkForStoppedNodes(db *sql.DB, postgres bool) []HashlogItem {
+	var sql_readall string
+	if postgres {
+		sql_readall = `select * from latest_node_data where (ts <= now() - interval '4 minutes' and ts >= now() - interval '8 minutes') OR (ts >= now() - interval '59 minutes' and ts <= now() - interval '56 minutes')`
+	} else {
+		sql_readall = `select * from latest_node_data where (datetime(ts,'utc') <= datetime('now', '-4 minutes') and datetime(ts,'utc') >= datetime('now', '-8 minutes')) OR (datetime(ts,'utc') >= datetime('now', '-59 minutes') and datetime(ts,'utc') <= datetime('now', '-56 minutes'));`
+	}
+
+	rows, err := db.Query(sql_readall)
 	if err != nil {
 		return nil
 	}
@@ -141,28 +156,6 @@ func checkForZeroPeers(db *sql.DB) []HashlogItem {
 		err2 := rows.Scan(&item.Nodeid, &item.Nodename, &item.Ts, &item.Hashrate, &item.Ip, &item.Peercount, &item.Blocknumber)
 		if err2 != nil {
 			return nil
-		}
-		result = append(result, item)
-	}
-	return result
-}
-
-func getTotalHash(db *sql.DB, nodeCount int) []TotalHash {
-
-	sql_readall := `select strftime('%Y-%m-%d %H:%M', ts) as tstamp,sum(hashrate) as totalhash,count(*) as numberOfNodes from hashlog  group by strftime('%Y-%m-%d %H:%M', ts) having count(*) = ` + strconv.Itoa(nodeCount) + ` order by strftime('%Y-%m-%d %H:%M', ts) asc limit 5000`
-
-	rows, err := db.Query(sql_readall)
-	if err != nil {
-		panic(err)
-	}
-	defer rows.Close()
-
-	var result []TotalHash
-	for rows.Next() {
-		item := TotalHash{}
-		err2 := rows.Scan(&item.Tstamp, &item.TotalHash, &item.NumberOfNodes)
-		if err2 != nil {
-			panic(err2)
 		}
 		result = append(result, item)
 	}

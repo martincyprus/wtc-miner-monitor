@@ -2,21 +2,13 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
 	"strconv"
 	"time"
 )
 
 func buildHtml() string {
-	db, err := sql.Open("sqlite3", "./db.db")
-	if err != nil {
-		fmt.Println("Error opening SQLITE DB: %s", err.Error())
-		os.Exit(1)
-	}
-	bla := getLatestNodeData(db)
-	nodeIDs := getAllNodeIds(db)
+	bla := getLatestNodeData(Db)
+	nodeIDs := getAllNodeIds(Db)
 	var html string
 	html = `<html> 
 
@@ -39,7 +31,7 @@ func buildHtml() string {
 	html += `</table>
 	<br><br>
 		<h1>Average Hashes</h1>`
-	averageHashes := getAverageHash(db)
+	averageHashes := getAverageHash(Db)
 	html += "<table border = 2 cellpadding=2><tr><th>Nodeid</th><th>Nodename</th><th>Average Hash</th></tr>"
 	for _, row := range averageHashes {
 		html += "<tr>" +
@@ -51,7 +43,7 @@ func buildHtml() string {
 	html += `</table>
        <br><br>
 		<h1>Latest Total Hashes</h1>`
-	totalHashes := getLatestTotalHash(db)
+	totalHashes := getLatestTotalHash(Db, Postgres)
 	html += "<table border = 2 cellpadding=2><tr><th>Timestamp</th><th>Total h/s</th><th>Number of Nodes(" + strconv.Itoa(len(nodeIDs)) + ")</th></tr>"
 	for _, row := range totalHashes {
 		html += "<tr>" +
