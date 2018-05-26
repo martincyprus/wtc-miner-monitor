@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"strconv"
 	"time"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type HashlogItem struct {
@@ -53,7 +51,7 @@ func getLatestTotalHash(db *sql.DB, postgres bool) []TotalHash {
 
 	var sql_readall string
 	if postgres {
-		sql_readall = `select to_char(ts, 'YYYY-MM-DD H24:MI')  as tstamp,sum(hashrate) as totalhash,count(*) as numberOfNodes from hashlog group by to_char(ts, 'YYYY-MM-DD H24:MI') order by to_char(ts, 'YYYY-MM-DD H24:MI') desc limit 10;`
+		sql_readall = `select to_char(ts, 'YYYY-MM-DD HH24:MI')  as tstamp,sum(hashrate) as totalhash,count(*) as numberOfNodes from hashlog group by to_char(ts, 'YYYY-MM-DD HH24:MI') order by to_char(ts, 'YYYY-MM-DD HH24:MI') desc limit 10;`
 	} else {
 		sql_readall = `select strftime('%Y-%m-%d %H:%M', ts) as tstamp,sum(hashrate) as totalhash,count(*) as numberOfNodes from hashlog group by strftime('%Y-%m-%d %H:%M', ts) order by strftime('%Y-%m-%d %H:%M', ts) desc limit 10;`
 	}
@@ -106,9 +104,9 @@ func getAverageHash(db *sql.DB) []AverageHash {
 func cleanupOldRecords(db *sql.DB, hours int, postgres bool) {
 	var sql_readall string
 	if postgres {
-		sql_readall = `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-` + strconv.Itoa(hours) + ` hours');`
+		sql_readall = `delete from hashlog where ts < now() - interval '` + strconv.Itoa(hours) + ` hours';`
 	} else {
-		sql_readall = `where ts < now() - interval '` + strconv.Itoa(hours) + ` hours';`
+		sql_readall = `delete from hashlog where datetime(ts,'utc') <= datetime('now', '-` + strconv.Itoa(hours) + ` hours');`
 	}
 	stmt, err := db.Prepare(sql_readall)
 	checkErr(err)

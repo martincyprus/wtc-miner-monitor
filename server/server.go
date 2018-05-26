@@ -52,10 +52,18 @@ func main() {
 		fmt.Printf("Failed to read the configuration file: %s", err)
 		os.Exit(3)
 	}
+	validateServerConfig(configuration)
+
+	if (len(os.Args) > 1) && (strings.ToLower(os.Args[1]) == strings.ToLower("Test")) {
+		fmt.Println(len(os.Args))
+		fmt.Println("Will now send a test message to your specific telegram BotID and channel id, and then exit")
+		testMyTelegramBot(configuration)
+		fmt.Println("Message was sent, verify you got a message, if not please fix the botID or channel id, will exit now")
+		os.Exit(3)
+	}
 
 	if strings.ToUpper(configuration.UsePostgres) == "YES" {
 		Postgres = true
-		fmt.Println("YES")
 		connStr := "host=localhost user=postgres dbname=postgres sslmode=disable"
 		Db, err = sql.Open("postgres", connStr)
 		if err != nil {
@@ -71,9 +79,6 @@ func main() {
 			os.Exit(1)
 		}
 	}
-
-	os.Exit(3)
-	validateServerConfig(configuration)
 
 	CONN_PORT := configuration.MPort
 
@@ -210,15 +215,23 @@ func handleRequest(conn net.Conn, Db *sql.DB, configuration Configuration) {
 	// Close the connection when you're done with it.
 	conn.Close()
 
-	stmt, err := Db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount,blocknumber) values(?,?,?,?,?,?,?)")
-	if err != nil {
-		fmt.Println("Bad values unable to make proper SQL statement error was: ", err)
-		return
-	}
-	stmt.Exec(s.Id, s.Name, s.Ts, s.Hashrate, s.Ip, s.Peercount, s.BlockNumber)
-	if err != nil {
-		fmt.Println("Unable to insert values to db with following statement: ", err)
-		return
+	if Postgres {
+		_, err = Db.Exec("INSERT INTO hashlog(nodeid, nodename, hashrate,ip,peercount,blocknumber) values($1,$2,$3,$4,$5,$6)", s.Id, s.Name, s.Hashrate, s.Ip, s.Peercount, s.BlockNumber)
+		if err != nil {
+			fmt.Println("Bad values unable to make proper SQL statement error was: ", err)
+			return
+		}
+	} else {
+		stmt, err := Db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount,blocknumber) values(?,?,?,?,?,?,?)")
+		if err != nil {
+			fmt.Println("Bad values unable to make proper SQL statement error was: ", err)
+			return
+		}
+		stmt.Exec(s.Id, s.Name, s.Ts, s.Hashrate, s.Ip, s.Peercount, s.BlockNumber)
+		if err != nil {
+			fmt.Println("Unable to insert values to db with following statement: ", err)
+			return
+		}
 	}
 
 }
@@ -270,15 +283,15 @@ func validateServerConfig(configuration Configuration) {
 }
 
 func verifyHashDatabaseExists(db *sql.DB) *sql.DB {
-	fmt.Println("IN IT")
-	sqlQ := "SELECT count(*) as dbExists FROM pg_database WHERE datname='hashdb'"
-	rows, err := db.Query(sqlQ)
+	sqlQ := "SELECT count(*) as dbexists FROM pg_database WHERE datname='hashdb'"
+	row := db.QueryRow(sqlQ)
+
+	var dbexists int
+	err := row.Scan(&dbexists)
 	if err != nil {
 		panic(err)
 	}
-	var dbExists int
-	err = rows.Scan(&dbExists)
-	if dbExists == 1 {
+	if dbexists == 1 {
 		fmt.Println("DB exists")
 		db.Close()
 		connStr := "host=localhost user=postgres dbname=hashdb sslmode=disable"
@@ -288,9 +301,9 @@ func verifyHashDatabaseExists(db *sql.DB) *sql.DB {
 		}
 		return db
 	} else {
-		fmt.Println("Doesn't exist")
+		fmt.Println("DB Doesn't exist, creating")
 		sqlQ = "create database hashdb;"
-		rows, err = db.Query(sqlQ)
+		_, err = db.Query(sqlQ)
 		if err != nil {
 			panic(err)
 		}
@@ -299,12 +312,13 @@ func verifyHashDatabaseExists(db *sql.DB) *sql.DB {
 		db, err = sql.Open("postgres", connStr)
 
 		sqlQ = `
+BEGIN;
 CREATE TABLE public.hashlog
 (
     id serial,
 	nodeid integer NOT NULL,
     nodename text NOT NULL,
-    ts timestamp without time zone NOT NULL,
+    ts timestamp with time zone default now() NOT NULL,
     hashrate integer NOT NULL,
     ip text NOT NULL,
     peercount integer NOT NULL,
@@ -342,13 +356,13 @@ LEFT OUTER JOIN hashlog t2
 ON t1.nodeid = t2.nodeid 
 AND t1.ts < t2.ts
 WHERE t2.nodeid IS NULL
-ORDER BY t1.ts;
+ORDER BY t1.nodeid;
 
 CREATE or REPLACE VIEW average_hash_by_node(nodeid,nodename,hashrate) as select nodeid, nodename, round(avg(hashrate)) from hashlog group by nodeid,nodename;
-
+COMMIT;
 
 `
-		_, err = Db.Query(sqlQ)
+		_, err = db.Query(sqlQ)
 		if err != nil {
 			panic(err)
 		}

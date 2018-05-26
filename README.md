@@ -40,6 +40,7 @@ has the following content:
         "TelegramChannelID":"your_personal_channelID",
         "Debug":"YES",
 		"KeepLogsHours":4
+		"Postgres":"NO"
 </pre>
 
 
@@ -73,7 +74,12 @@ print out all the data sent to server from clients
 #### KeepLogsHours
 this configurs when data is cleaned from the database, in hours. Imagine you have 10 nodes, each report to the server every 1 minute, so in 60 minutes you would have 600 entries, in 10h you would have 6000 entries, the statistics page slows down as amount of data goes up as it is a bigger dataset to aggregate and search for the information. I would recommend to keep the total data for a fast responsive page to be around the 4000-6000 entries. then the page should load in sub 2 seconds. Configure according to your needs.
 
+If you are running a postgres database backend, you can keep a much longer history, e.g. a week or similar even with hundreds of clients without really affecting performance.
+
 Once you have configured the above parameters you can just double click start the server.exe, if it exists means that some of the parameters might not be configured correctly, please start it manually from a command line and read the output carefully, and correct the problem.
+
+#### Postgres
+If you want to use a postgres database backend, default is "NO", change it to "YES" if you want to use postgres. Scroll down to the "PostgreSQL" section for information how to setup postgres. If you have more then 40 clients you should consider using a postgres database instead of the simple built in sqlite database. Sqlite can not handle concurrent writes to the database, so it will only work as long as multiple connections clients dont try to send data at exactly the same time. Postgres has been tested with more then 1000 simultantiouns clients with out any delay or problem. 
 
 ## Client
 The client is something you have to run on each node and configure for each specific node. It comes with the following files:
@@ -158,6 +164,48 @@ Please start by reading this following intro to telegram bots:
 
 next follow this tutorial to create your bot API key and find your channel ID:
 * https://www.forsomedefinition.com/automation/creating-telegram-bot-notifications/
+
+# PostgreSQL setup
+I will go through the setup of postgres on windows, as I assume most people will be running windows for now, though similar steps can be taken for Linux.
+* Download postgres 10.4 installer from: https://www.enterprisedb.com/downloads/postgres-postgresql-downloads
+  * Select verison 10.4 
+  * OS, windows_86-64 
+* launch the exe
+  * Next
+  * Pick location, just by by default unless you got some specific needs, Next
+  * Uncheck the "Stack builder", no need for this, Next
+  * Pick a location for the data directory of your database, default is fine e.g. (C:\Program Files\PostgreSQL\10\data), Next 
+  * Pick a password for you postgres super user, remember, write it down, Next
+  * Port default, 5432 , Next
+  * Locale, default, Next
+  * Verify, Next
+  * Next
+  * Finish
+* By default this database installation is accepting connections to everywhere, we do not want that, we want it to only accept connections from this machine.
+  * if you installed data directory to default location, then open the following file in e.g. notepad: C:\Program Files\PostgreSQL\10\data\postgresql.conf
+    * find the line that says: listen_addresses = '*' change it to: listen_addresses = 'localhost', save and close the file
+  * if you installed data directory to default location, then open the following file in e.g. notepad: C:\Program Files\PostgreSQL\10\data\pg_hba.conf
+    * Scoll to th bottom the file, there are for instances of "md5" replace all 4 of them with "trust" save and close the file
+  * Click windows start menu button, and type "services" Enter, this will launch the windows services application
+    * In the list locate "postgresql-10-64" right click it and select "restart"
+	* close the services application
+* Test that the installation is working correctly by, start menu, locate the new "postgres" menu item, and then select "SQL shell (psql) and launch it"
+  * a command line will start, just click Enter on all, using the default values, it will look like something like this:
+<pre>
+			Server [localhost]:
+			Database [postgres]:
+			Port [5432]:
+			Username [postgres]:
+			psql (10.4)
+			WARNING: Console code page (437) differs from Windows code page (1252)
+	         	8-bit characters might not work correctly. See psql reference
+	         	page "Notes for Windows users" for details.
+			Type "help" for help.
+
+			postgres=#
+</pre>
+  * type "\q" enter to exit, followed by another enter, installation of postgres is now complete.
+* Database is now ready to be used.
 
 
 # Donations welcome
