@@ -17,6 +17,8 @@ import (
 	"wtc-miner-monitor/aesEncryption"
 	"wtc-miner-monitor/wtcPayload"
 
+	"html/template"
+
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/tkanos/gonfig"
@@ -143,8 +145,15 @@ func main() {
 
 	http.HandleFunc("/", BasicAuth(handle, configuration.WEBUsername, configuration.WEBPassword, "Please enter your username and password for this site"))
 
+	http.HandleFunc("/stats/", BasicAuth(handle2, configuration.WEBUsername, configuration.WEBPassword, "Please enter your username and password for this site"))
+
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(configuration.WEBPORT), nil))
 
+}
+
+func handle2(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("stats.html"))
+	tmpl.Execute(w, getStatsData())
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {

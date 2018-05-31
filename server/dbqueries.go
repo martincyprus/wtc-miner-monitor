@@ -203,3 +203,15 @@ func getMachineSeries(db *sql.DB, nodeID int, limit int) []HashlogItem {
 	}
 	return result
 }
+
+func getLagestBlockNumber() int {
+	sqlQ := "SELECT max(blocknumber) as blocknumber FROM hashlog"
+	row := Db.QueryRow(sqlQ)
+
+	var blocknumber int
+	err := row.Scan(&blocknumber)
+	if err != nil {
+		return 0
+	}
+	return blocknumber
+}

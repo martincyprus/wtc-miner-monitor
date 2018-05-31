@@ -56,3 +56,80 @@ func buildHtml() string {
 	html += "</body></html>"
 	return html
 }
+
+type StatsData struct {
+	PageTitle     string
+	CurrentTime   string
+	TotalHashes   []TotalHash
+	AverageHashes []AverageHash
+	LatestLogHash []HashlogItem
+	AllNodeIds    []int
+}
+
+func (h HashlogItem) FormatTimeStamp() string {
+	return h.Ts.UTC().Format("2006-01-02 15:04 UTC")
+}
+
+func (a AverageHash) FormatAvgHash() string {
+	return strconv.FormatFloat(a.Hashrate, 'f', -1, 32)
+}
+
+func (a StatsData) TotalNumberOfNodes() string {
+	return strconv.Itoa(len(a.AllNodeIds))
+}
+
+func (h HashlogItem) HashRateColor() string {
+	if h.Hashrate == 0 {
+		return "red"
+	} else {
+		return "green"
+	}
+}
+
+func (h HashlogItem) PeerCountColor() string {
+	if h.Peercount >= 24 {
+		return "green"
+	}
+	if h.Peercount >= 10 {
+		return "yellow"
+	}
+	if h.Peercount >= 3 {
+		return "orange"
+	}
+	return "red"
+}
+
+func (h HashlogItem) BlockNumberColor() string {
+	diff := getLagestBlockNumber() - h.Blocknumber
+	if diff > 4 {
+		return "red"
+	}
+	if diff > 3 {
+		return "yellow"
+	}
+	return "green"
+}
+
+func (h HashlogItem) TimeStampColor() string {
+	duration := time.Since(h.Ts)
+	minutes := time.Duration(duration) * time.Minute
+
+	if minutes > 5 {
+		return "red"
+	}
+	if minutes > 3 {
+		return "yellow"
+	}
+	return "green"
+}
+
+func getStatsData() StatsData {
+	var stats StatsData
+	stats.AllNodeIds = getAllNodeIds(Db)
+	stats.TotalHashes = getLatestTotalHash(Db, Postgres)
+	stats.AverageHashes = getAverageHash(Db)
+	stats.LatestLogHash = getLatestNodeData(Db)
+	stats.PageTitle = "Statistics"
+	stats.CurrentTime = time.Now().UTC().Format("2006-01-02 15:04 UTC")
+	return stats
+}
