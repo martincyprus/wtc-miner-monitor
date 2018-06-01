@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -145,19 +144,16 @@ func main() {
 
 	http.HandleFunc("/", BasicAuth(handle, configuration.WEBUsername, configuration.WEBPassword, "Please enter your username and password for this site"))
 
-	http.HandleFunc("/stats/", BasicAuth(handle2, configuration.WEBUsername, configuration.WEBPassword, "Please enter your username and password for this site"))
-
 	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(configuration.WEBPORT), nil))
 
 }
 
-func handle2(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("stats.html"))
-	tmpl.Execute(w, getStatsData())
-}
-
 func handle(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, buildHtml())
+	tmpl, err := template.New("stats").Parse(STATSTEMPLATE)
+	if err != nil {
+		fmt.Println("Error parsing html template: ", err.Error())
+	}
+	tmpl.Execute(w, getStatsData())
 }
 
 func BasicAuth(handler http.HandlerFunc, username, password, realm string) http.HandlerFunc {
