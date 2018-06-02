@@ -9,5 +9,6 @@
 	"TelegramChannelID":"your_personal_channelID",
 	"Debug":"YES",
 	"KeepLogsHours":6,
-	"UsePostgres":"NO"
+	"UsePostgres":"NO",
+	"TimeZoneLoction":"Asia/Singapore"
 }

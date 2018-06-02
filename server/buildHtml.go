@@ -2,60 +2,10 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 )
-
-func buildHtml() string {
-	bla := getLatestNodeData(Db)
-	nodeIDs := getAllNodeIds(Db)
-	var html string
-	html = `<html> 
-
-	<body> 
- `
-	html += `<h1>Latest Hash By Nodes</h1>`
-	html += "<h2>Time now: " + time.Now().UTC().Format("2006-01-02 15:04 UTC") + "</h2>"
-
-	html += "<table border = 2 cellpadding=2><tr><th>NodeID</th><th>Name</th><th>h/s</th><th>Peer Count</th><th>Block</th><th>Last datapoint</th></tr>"
-	for _, row := range bla {
-		html += "<tr>" +
-			"<td>" + strconv.Itoa(row.Nodeid) + "</td>" +
-			"<td>" + row.Nodename + "</td>" +
-			"<td>" + strconv.Itoa(row.Hashrate) + "</td>" +
-			"<td>" + strconv.Itoa(row.Peercount) + "</td>" +
-			"<td>" + strconv.Itoa(row.Blocknumber) + "</td>" +
-			"<td>" + row.Ts.UTC().Format("2006-01-02 15:04 UTC") + "</td>" +
-			"</tr>"
-	}
-	html += `</table>
-	<br><br>
-		<h1>Average Hashes</h1>`
-	averageHashes := getAverageHash(Db)
-	html += "<table border = 2 cellpadding=2><tr><th>Nodeid</th><th>Nodename</th><th>Average Hash</th></tr>"
-	for _, row := range averageHashes {
-		html += "<tr>" +
-			"<td>" + strconv.Itoa(row.Nodeid) + "</td>" +
-			"<td>" + row.Nodename + "</td>" +
-			"<td>" + strconv.FormatFloat(row.Hashrate, 'f', -1, 32) + "</td>" +
-			"</tr>"
-	}
-	html += `</table>
-       <br><br>
-		<h1>Latest Total Hashes</h1>`
-	totalHashes := getLatestTotalHash(Db, Postgres)
-	html += "<table border = 2 cellpadding=2><tr><th>Timestamp</th><th>Total h/s</th><th>Number of Nodes(" + strconv.Itoa(len(nodeIDs)) + ")</th></tr>"
-	for _, row := range totalHashes {
-		html += "<tr>" +
-			"<td>" + row.Tstamp + "</td>" +
-			"<td>" + strconv.Itoa(row.TotalHash) + "</td>" +
-			"<td>" + strconv.Itoa(row.NumberOfNodes) + "</td>" +
-			"</tr>"
-	}
-	html += `</table>`
-	html += "</body></html>"
-	return html
-}
 
 type StatsData struct {
 	PageTitle     string
@@ -67,7 +17,18 @@ type StatsData struct {
 }
 
 func (h HashlogItem) FormatTimeStamp() string {
-	return h.Ts.UTC().Format("2006-01-02 15:04 UTC")
+	return h.Ts.In(TimeZoneLocation).Format("2006-01-02 15:04 (MST)")
+}
+
+func (h TotalHash) FormatTotalHashesTimeStamp() string {
+	fmt.Println(h.Tstamp)
+	t, err := time.Parse("2018-05-29 13:04", h.Tstamp)
+	if err != nil {
+		fmt.Println("ERROR", err.Error())
+	}
+
+	fmt.Println(t)
+	return t.In(TimeZoneLocation).Format("2006-01-02 15:04 (MST)")
 }
 
 func (a AverageHash) FormatAvgHash() string {
@@ -111,13 +72,12 @@ func (h HashlogItem) BlockNumberColor() string {
 }
 
 func (h HashlogItem) TimeStampColor() string {
-	duration := time.Since(h.Ts)
-	minutes := time.Duration(duration) * time.Minute
+	duration := time.Since(h.Ts).Minutes()
 
-	if minutes > 5 {
+	if duration > 5 {
 		return "red"
 	}
-	if minutes > 3 {
+	if duration > 3 {
 		return "yellow"
 	}
 	return "green"
@@ -130,6 +90,58 @@ func getStatsData() StatsData {
 	stats.AverageHashes = getAverageHash(Db)
 	stats.LatestLogHash = getLatestNodeData(Db)
 	stats.PageTitle = "Statistics"
-	stats.CurrentTime = time.Now().UTC().Format("2006-01-02 15:04 UTC")
+	stats.CurrentTime = time.Now().In(TimeZoneLocation).Format("2006-01-02 15:04 (MST)")
 	return stats
 }
+
+const (
+	STATSTEMPLATE = `
+<html>
+<body>
+<h1>Latest Hash By Nodes</h1>
+<h2>Time now: {{ .CurrentTime }} </h2>
+<table border = 2 cellpadding=2>
+<tr>
+<th>NodeID</th><th>Name</th><th>h/s</th><th>Peer Count</th><th>Block</th><th>Last datapoint</th>
+</tr>
+	{{range .LatestLogHash}}
+		<tr>
+			<td>{{.Nodeid}}</td>
+			<td>{{.Nodename}}</td>
+			<td style="background-color:{{.HashRateColor}}" >{{.Hashrate}}</td>
+			<td style="background-color:{{.PeerCountColor}}" >{{.Peercount}}</td>
+			<td style="background-color:{{.BlockNumberColor}}" >{{.Blocknumber}}</td>
+			<td style="background-color:{{.TimeStampColor}}" >{{.FormatTimeStamp}}</td>
+		</tr>
+	{{end}}
+</table>
+
+<br><br>
+<h1>Average Hashes</h1>
+<table border = 2 cellpadding=2>
+<tr><th>Nodeid</th><th>Nodename</th><th>Average Hash</th></tr>
+	{{range .AverageHashes}}
+		<tr>
+			<td>{{.Nodeid}}</td>
+			<td>{{.Nodename}}</td>
+			<td>{{.FormatAvgHash}}</td>
+		</tr>
+	{{end}}
+</table>
+<br><br>
+
+<h1>Latest Total Hashes</h1>
+	<table border = 2 cellpadding=2>
+	<tr>	<th>Timestamp</th><th>Total h/s</th><th>Number of Nodes{{.TotalNumberOfNodes}}</th></tr>
+		{{range .TotalHashes}}
+		<tr>
+			<td>{{.FormatTotalHashesTimeStamp}}</td>
+			<td>{{.TotalHash}}</td>
+			<td>{{.NumberOfNodes}}</td>
+			</tr>
+			{{end}}
+	</table>
+</body>
+</html>
+`
+)
