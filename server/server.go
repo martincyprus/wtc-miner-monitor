@@ -231,12 +231,12 @@ func handleRequest(conn net.Conn, Db *sql.DB, configuration Configuration) {
 			return
 		}
 	} else {
-		stmt, err := Db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount,blocknumber) values(?,?,?,?,?,?,?)")
+		stmt, err := Db.Prepare("INSERT INTO hashlog(nodeid, nodename, ts,hashrate,ip,peercount,blocknumber) values(?,?,CURRENT_TIMESTAMP,?,?,?,?)")
 		if err != nil {
 			fmt.Println("Bad values unable to make proper SQL statement error was: ", err)
 			return
 		}
-		stmt.Exec(s.Id, s.Name, s.Ts, s.Hashrate, s.Ip, s.Peercount, s.BlockNumber)
+		stmt.Exec(s.Id, s.Name, s.Hashrate, s.Ip, s.Peercount, s.BlockNumber)
 		if err != nil {
 			fmt.Println("Unable to insert values to db with following statement: ", err)
 			return
