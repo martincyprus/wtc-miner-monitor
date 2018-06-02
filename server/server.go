@@ -40,10 +40,12 @@ type Configuration struct {
 	Debug             string
 	KeepLogsHours     int
 	UsePostgres       string
+	TimeZoneLoction   string
 }
 
 var Db *sql.DB
 var Postgres bool
+var TimeZoneLocation *time.Location
 
 func main() {
 
@@ -54,6 +56,7 @@ func main() {
 		os.Exit(3)
 	}
 	validateServerConfig(configuration)
+	TimeZoneLocation, _ = time.LoadLocation(configuration.TimeZoneLoction)
 
 	if (len(os.Args) > 1) && (strings.ToLower(os.Args[1]) == strings.ToLower("Test")) {
 		fmt.Println(len(os.Args))
