@@ -21,13 +21,10 @@ func (h HashlogItem) FormatTimeStamp() string {
 }
 
 func (h TotalHash) FormatTotalHashesTimeStamp() string {
-	fmt.Println(h.Tstamp)
 	t, err := time.Parse("2006-01-02 15:04", h.Tstamp)
 	if err != nil {
 		fmt.Println("ERROR", err.Error())
 	}
-
-	fmt.Println(t)
 	return t.In(TimeZoneLocation).Format("2006-01-02 15:04 (MST)")
 }
 
