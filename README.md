@@ -1,4 +1,4 @@
-# wtc-miner-monitor
+# wtc-miner-monitor version 1.0
 A Go server client tool for monitoring WTC mining on multiple machines
 
 This tool was written because I needed it for my own usage, I needed to monitor some 10-20 machines mining WTC and it was to cumbersome to login to each machine all the time to verify that they were still mining. I'm happy to add features and fix things if found but my time is limited and it works great for what I wanted it to do. This software is provided as is.
@@ -41,6 +41,7 @@ has the following content:
         "Debug":"YES",
 		"KeepLogsHours":4
 		"Postgres":"NO"
+		"TimeZoneLoction":"Asia/Singapore"
 </pre>
 
 
@@ -61,6 +62,10 @@ Password to login to the web page with miner statistics
 
 #### UseTelegramBot
 If you want to use the telegramBot option for notifications, see bellow for instructions on how to setup your bot. (yes/no). If you do not want to use Telegram the Node Down or 0 Peer count are just written in the server window, also it will show on the web page.
+It is possible to check if your telegram is setup correctly by running server with "test" it will try to send a telegram message and then exit.
+<pre>
+	server.exe test
+</pre>
 
 #### TelegramBotAPIKey
 Your full telegram API botkey, should look like something like this: bot123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11 (important include the "bot" in the beginning.)
@@ -80,6 +85,9 @@ Once you have configured the above parameters you can just double click start th
 
 #### Postgres
 If you want to use a postgres database backend, default is "NO", change it to "YES" if you want to use postgres. Scroll down to the "PostgreSQL" section for information how to setup postgres. If you have more then 40 clients you should consider using a postgres database instead of the simple built in sqlite database. Sqlite can not handle concurrent writes to the database, so it will only work as long as multiple connections clients dont try to send data at exactly the same time. Postgres has been tested with more then 1000 simultantiouns clients with out any delay or problem. 
+
+#### TimeZoneLoction
+Specific your time zone location according the the ICANN database, for a list of location please look at: https://en.wikipedia.org/wiki/ you should put the content of the "TZ*" column into this parameter e.g. "Africa/Cairo" or "America/New_York" all times will then be displayed in that timezone. Unused, or left, or spelling error etc it will just display in UTC.
 
 ## Client
 The client is something you have to run on each node and configure for each specific node. It comes with the following files:
@@ -141,6 +149,22 @@ You should start seeing 3 tables:
 * The second table will show the average hashrate per node, based on the "KeepLogsHours" number of hours.
 * The third table will show your aggregated hashing power for each minute. (node count shows how how many nodes reported in that minute, it is possible it shows more or less then your total node count, it is a known "feature" but mostly it will show correctly)
 
+## Color coding on the "Latest Hash By Nodes"
+<b>Hashrate</b>
+* Green 1+
+* Red = 0
+
+<b>Peer count</b>
+* Green 20+
+* Yellow 10-19
+* Orange 3-9
+* Red 0-2
+
+<b>blockNumber</b>
+* Green when its within 2 blocks of the highest block from any client
+* Yellow when its 3-4 blocks of the highest block from any client
+* Red if its more then 5 blocks behind the highest block from any client
+
 # Using this monitor for Multi-GPU rigs
 It is possible to monitor Multi-GPU setups. Just create a client folder for each GPU, and configure each config.json accordingly, the things to take extra care about is the RpcPort and NodeId/name since it should be different from the other clients, and the RPC port should match what is in the start_gpu.bat for the node you are monitoring.
 
@@ -164,6 +188,11 @@ Please start by reading this following intro to telegram bots:
 
 next follow this tutorial to create your bot API key and find your channel ID:
 * https://www.forsomedefinition.com/automation/creating-telegram-bot-notifications/
+
+It is possible to check if your telegram is setup correctly by running server with "test" it will try to send a telegram message via your bot and then exit.
+<pre>
+	server.exe test
+</pre>
 
 # PostgreSQL setup
 I will go through the setup of postgres on windows, as I assume most people will be running windows for now, though similar steps can be taken for Linux.

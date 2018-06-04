@@ -21,13 +21,10 @@ func (h HashlogItem) FormatTimeStamp() string {
 }
 
 func (h TotalHash) FormatTotalHashesTimeStamp() string {
-	fmt.Println(h.Tstamp)
-	t, err := time.Parse("2018-05-29 13:04", h.Tstamp)
+	t, err := time.Parse("2006-01-02 15:04", h.Tstamp)
 	if err != nil {
 		fmt.Println("ERROR", err.Error())
 	}
-
-	fmt.Println(t)
 	return t.In(TimeZoneLocation).Format("2006-01-02 15:04 (MST)")
 }
 
@@ -48,7 +45,7 @@ func (h HashlogItem) HashRateColor() string {
 }
 
 func (h HashlogItem) PeerCountColor() string {
-	if h.Peercount >= 24 {
+	if h.Peercount >= 20 {
 		return "green"
 	}
 	if h.Peercount >= 10 {
@@ -62,7 +59,7 @@ func (h HashlogItem) PeerCountColor() string {
 
 func (h HashlogItem) BlockNumberColor() string {
 	diff := getLagestBlockNumber() - h.Blocknumber
-	if diff > 4 {
+	if diff > 5 {
 		return "red"
 	}
 	if diff > 3 {

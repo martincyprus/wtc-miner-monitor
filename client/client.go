@@ -141,18 +141,18 @@ func getHash(configuration Configuration) int {
 
 	if configuration.Mode == "CPU" {
 		var sum float64 = 0
-		for i := 0; i < 6; i++ {
+		for i := 0; i < 55; i++ {
 			f := getHashNumber()
 			if f != 0 {
 				sum += float64(f)
-				time.Sleep(time.Duration(9) * time.Second)
+				time.Sleep(time.Duration(1) * time.Second)
 			} else {
 
 				return 0
 			}
 
 		}
-		return int(math.RoundToEven(sum / 6))
+		return int(math.RoundToEven(sum / 55))
 	}
 	if configuration.Mode == "GPU" {
 		fmt.Println("Doing GPU")
