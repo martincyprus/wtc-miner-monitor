@@ -87,7 +87,7 @@ Once you have configured the above parameters you can just double click start th
 If you want to use a postgres database backend, default is "NO", change it to "YES" if you want to use postgres. Scroll down to the "PostgreSQL" section for information how to setup postgres. If you have more then 40 clients you should consider using a postgres database instead of the simple built in sqlite database. Sqlite can not handle concurrent writes to the database, so it will only work as long as multiple connections clients dont try to send data at exactly the same time. Postgres has been tested with more then 1000 simultantiouns clients with out any delay or problem. 
 
 #### TimeZoneLoction
-Specific your time zone location according the the ICANN database, for a list of location please look at: https://en.wikipedia.org/wiki/ you should put the content of the "TZ*" column into this parameter e.g. "Africa/Cairo" or "America/New_York" all times will then be displayed in that timezone. Unused, or left, or spelling error etc it will just display in UTC.
+Specific your time zone location according the the ICANN database, for a list of location please look at: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones you should put the content of the "TZ*" column into this parameter e.g. "Africa/Cairo" or "America/New_York" all times will then be displayed in that timezone. Unused, or left, or spelling error etc it will just display in UTC.
 
 ## Client
 The client is something you have to run on each node and configure for each specific node. It comes with the following files:
