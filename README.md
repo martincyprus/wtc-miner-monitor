@@ -39,9 +39,9 @@ has the following content:
         "TelegramBotAPIKey":"Full_botID",
         "TelegramChannelID":"your_personal_channelID",
         "Debug":"YES",
-		"KeepLogsHours":4
-		"Postgres":"NO"
-		"TimeZoneLoction":"Asia/Singapore"
+	"KeepLogsHours":4
+	"Postgres":"NO"
+	"TimeZoneLocation":"Asia/Singapore"
 </pre>
 
 
@@ -109,7 +109,7 @@ The client can track either CPU or GPU hashing, and it also tracks peer count an
         "Mode":"GPU",
         "WaltonClientPath":"C:\\Program Files\\WTC\\walton.exe",
         "GpuMinerLocation":"C:\\Program Files\\WTC\\Walton-GPU-64\\GPUMing_v0.2",
-		"RpcPort":8545
+	"RpcPort":8545
 </pre>
 
 #### Id
