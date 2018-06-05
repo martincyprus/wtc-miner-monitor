@@ -10,5 +10,5 @@
 	"Debug":"YES",
 	"KeepLogsHours":6,
 	"UsePostgres":"NO",
-	"TimeZoneLoction":"Asia/Singapore"
+	"TimeZoneLocation":"Asia/Singapore"
 }

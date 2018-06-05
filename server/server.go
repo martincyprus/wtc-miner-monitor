@@ -18,6 +18,7 @@ import (
 
 	"html/template"
 
+	"4d63.com/tz"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/tkanos/gonfig"
@@ -40,7 +41,7 @@ type Configuration struct {
 	Debug             string
 	KeepLogsHours     int
 	UsePostgres       string
-	TimeZoneLoction   string
+	TimeZoneLocation  string
 }
 
 var Db *sql.DB
@@ -56,7 +57,11 @@ func main() {
 		os.Exit(3)
 	}
 	validateServerConfig(configuration)
-	TimeZoneLocation, _ = time.LoadLocation(configuration.TimeZoneLoction)
+	TimeZoneLocation, err = tz.LoadLocation(configuration.TimeZoneLocation)
+	if err != nil {
+		fmt.Printf("Unable to  %s", err)
+		os.Exit(3)
+	}
 
 	if (len(os.Args) > 1) && (strings.ToLower(os.Args[1]) == strings.ToLower("Test")) {
 		fmt.Println(len(os.Args))
