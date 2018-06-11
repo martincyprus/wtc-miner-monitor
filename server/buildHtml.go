@@ -25,7 +25,7 @@ func (h TotalHash) FormatTotalHashesTimeStamp() string {
 	if err != nil {
 		fmt.Println("ERROR", err.Error())
 	}
-	return t.In(TimeZoneLocation).Format("2006-01-02 15:04 (MST)")
+	return t.Format("2006-01-02 15:04 (MST)")
 }
 
 func (a AverageHash) FormatAvgHash() string {

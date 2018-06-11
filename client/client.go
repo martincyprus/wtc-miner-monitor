@@ -30,16 +30,30 @@ type Configuration struct {
 }
 
 func main() {
-	configuration := Configuration{}
-	err := gonfig.GetConf("config.json", &configuration)
-	if err != nil {
-		fmt.Printf("Failed to read the configuration file: %s", err)
-		os.Exit(3)
-	}
 
+	configuration := Configuration{}
+	if len(os.Args) > 1 {
+		path := os.Args[1]
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			fmt.Println("Error reading config file at path: ,", path)
+			os.Exit(3)
+		}
+		err := gonfig.GetConf(path, &configuration)
+		if err != nil {
+			fmt.Printf("Failed to read the configuration file: %s", err)
+			os.Exit(3)
+		}
+	} else {
+
+		err := gonfig.GetConf("config.json", &configuration)
+		if err != nil {
+			fmt.Printf("Failed to read the configuration file: %s", err)
+			os.Exit(3)
+		}
+	}
 	validateClientConfig(configuration)
 	createFiles(configuration)
-
+	os.Exit(0)
 	for {
 
 		createAPackage(configuration)
