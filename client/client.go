@@ -53,11 +53,8 @@ func main() {
 	}
 	validateClientConfig(configuration)
 	createFiles(configuration)
-	os.Exit(0)
 	for {
-
 		createAPackage(configuration)
-
 	}
 }
 
